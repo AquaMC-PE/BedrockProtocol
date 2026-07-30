@@ -41,17 +41,17 @@ class ContainerRegistryCleanupPacket extends DataPacket implements ClientboundPa
 	 */
 	public function getRemovedContainers() : array{ return $this->removedContainers; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->removedContainers = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$this->removedContainers[] = FullContainerName::read($in);
+			$this->removedContainers[] = FullContainerName::read($in, $protocolId);
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->removedContainers));
 		foreach($this->removedContainers as $container){
-			$container->write($out);
+			$container->write($out, $protocolId);
 		}
 	}
 

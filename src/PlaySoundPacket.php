@@ -54,23 +54,27 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->soundName = CommonTypes::getString($in);
-		$blockPosition = CommonTypes::getBlockPosition($in);
+		$blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		$this->x = $blockPosition->getX() / 8;
 		$this->y = $blockPosition->getY() / 8;
 		$this->z = $blockPosition->getZ() / 8;
 		$this->volume = LE::readFloat($in);
 		$this->pitch = LE::readFloat($in);
-		$this->serverSoundHandle = CommonTypes::readOptional($in, LE::readUnsignedLong(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->serverSoundHandle = CommonTypes::readOptional($in, LE::readUnsignedLong(...));
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->soundName);
-		CommonTypes::putBlockPosition($out, new BlockPosition((int) ($this->x * 8), (int) ($this->y * 8), (int) ($this->z * 8)));
+		CommonTypes::putBlockPosition($out, new BlockPosition((int) ($this->x * 8), (int) ($this->y * 8), (int) ($this->z * 8)), $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		LE::writeFloat($out, $this->volume);
 		LE::writeFloat($out, $this->pitch);
-		CommonTypes::writeOptional($out, $this->serverSoundHandle, LE::writeUnsignedLong(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			CommonTypes::writeOptional($out, $this->serverSoundHandle, LE::writeUnsignedLong(...));
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

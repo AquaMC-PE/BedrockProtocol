@@ -87,7 +87,7 @@ class MovePlayerPacket extends DataPacket implements ClientboundPacket, Serverbo
 		return self::create($actorRuntimeId, $position, $pitch, $yaw, $headYaw, $mode, $onGround, $ridingActorRuntimeId, 0, 0, $tick);
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->position = CommonTypes::getVector3($in);
 		$this->pitch = LE::readFloat($in);
@@ -103,7 +103,7 @@ class MovePlayerPacket extends DataPacket implements ClientboundPacket, Serverbo
 		$this->tick = VarInt::readUnsignedLong($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		CommonTypes::putVector3($out, $this->position);
 		LE::writeFloat($out, $this->pitch);

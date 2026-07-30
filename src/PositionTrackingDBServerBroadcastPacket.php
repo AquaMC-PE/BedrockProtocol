@@ -52,13 +52,13 @@ class PositionTrackingDBServerBroadcastPacket extends DataPacket implements Clie
 	/** @phpstan-return CacheableNbt<\pocketmine\nbt\tag\CompoundTag> */
 	public function getNbt() : CacheableNbt{ return $this->nbt; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->action = Byte::readUnsigned($in);
 		$this->trackingId = VarInt::readSignedInt($in);
 		$this->nbt = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->action);
 		VarInt::writeSignedInt($out, $this->trackingId);
 		$out->writeByteArray($this->nbt->getEncodedNbt());

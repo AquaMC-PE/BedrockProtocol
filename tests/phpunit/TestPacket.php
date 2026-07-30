@@ -20,11 +20,11 @@ use pmmp\encoding\ByteBufferWriter;
 class TestPacket extends DataPacket{
 	public const NETWORK_ID = 1023;
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 
 	}
 

@@ -98,9 +98,11 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 		return $this->extraPayload;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->chunkPosition = ChunkPosition::read($in);
-		$this->dimensionId = VarInt::readSignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+			$this->dimensionId = VarInt::readSignedInt($in);
+		}
 
 		$subChunkCountButNotReally = VarInt::readUnsignedInt($in);
 		if($subChunkCountButNotReally === self::CLIENT_REQUEST_FULL_COLUMN_FAKE_COUNT){
@@ -128,9 +130,11 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 		$this->extraPayload = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		$this->chunkPosition->write($out);
-		VarInt::writeSignedInt($out, $this->dimensionId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+			VarInt::writeSignedInt($out, $this->dimensionId);
+		}
 
 		if($this->clientSubChunkRequestsEnabled){
 			if($this->subChunkCount === PHP_INT_MAX){

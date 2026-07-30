@@ -27,6 +27,8 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 
 	/** @var ResourcePackStackEntry[] */
 	public array $resourcePackStack = [];
+	/** @var ResourcePackStackEntry[] */
+	public array $behaviorPackStack = [];
 	public bool $mustAccept = false;
 	public string $baseGameVersion = ProtocolInfo::MINECRAFT_VERSION_NETWORK;
 	public Experiments $experiments;
@@ -35,10 +37,12 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 * @param ResourcePackStackEntry[] $resourcePackStack
+	 * @param ResourcePackStackEntry[] $behaviorPackStack
 	 */
-	public static function create(array $resourcePackStack, bool $mustAccept, string $baseGameVersion, Experiments $experiments, bool $useVanillaEditorPacks) : self{
+	public static function create(array $resourcePackStack, array $behaviorPackStack, bool $mustAccept, string $baseGameVersion, Experiments $experiments, bool $useVanillaEditorPacks) : self{
 		$result = new self;
 		$result->resourcePackStack = $resourcePackStack;
+		$result->behaviorPackStack = $behaviorPackStack;
 		$result->mustAccept = $mustAccept;
 		$result->baseGameVersion = $baseGameVersion;
 		$result->experiments = $experiments;
@@ -46,8 +50,14 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->mustAccept = CommonTypes::getBool($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
+			$behaviorPackCount = VarInt::readUnsignedInt($in);
+			while($behaviorPackCount-- > 0){
+				$this->behaviorPackStack[] = ResourcePackStackEntry::read($in);
+			}
+		}
 
 		$resourcePackCount = VarInt::readUnsignedInt($in);
 		while($resourcePackCount-- > 0){
@@ -56,11 +66,19 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 
 		$this->baseGameVersion = CommonTypes::getString($in);
 		$this->experiments = Experiments::read($in);
-		$this->useVanillaEditorPacks = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			$this->useVanillaEditorPacks = CommonTypes::getBool($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->mustAccept);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
+			VarInt::writeUnsignedInt($out, count($this->behaviorPackStack));
+			foreach($this->behaviorPackStack as $entry){
+				$entry->write($out);
+			}
+		}
 
 		VarInt::writeUnsignedInt($out, count($this->resourcePackStack));
 		foreach($this->resourcePackStack as $entry){
@@ -69,7 +87,9 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 
 		CommonTypes::putString($out, $this->baseGameVersion);
 		$this->experiments->write($out);
-		CommonTypes::putBool($out, $this->useVanillaEditorPacks);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			CommonTypes::putBool($out, $this->useVanillaEditorPacks);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

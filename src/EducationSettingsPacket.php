@@ -93,7 +93,7 @@ class EducationSettingsPacket extends DataPacket implements ClientboundPacket{
 
 	public function getLinkSettings() : ?EducationSettingsExternalLinkSettings{ return $this->linkSettings; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->codeBuilderDefaultUri = CommonTypes::getString($in);
 		$this->codeBuilderTitle = CommonTypes::getString($in);
 		$this->canResizeCodeBuilder = CommonTypes::getBool($in);
@@ -106,7 +106,7 @@ class EducationSettingsPacket extends DataPacket implements ClientboundPacket{
 		$this->linkSettings = CommonTypes::readOptional($in, EducationSettingsExternalLinkSettings::read(...));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->codeBuilderDefaultUri);
 		CommonTypes::putString($out, $this->codeBuilderTitle);
 		CommonTypes::putBool($out, $this->canResizeCodeBuilder);

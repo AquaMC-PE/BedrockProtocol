@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -55,12 +56,14 @@ final class UpdateAttribute{
 	 */
 	public function getModifiers() : array{ return $this->modifiers; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$min = LE::readFloat($in);
 		$max = LE::readFloat($in);
 		$current = LE::readFloat($in);
-		$defaultMin = LE::readFloat($in);
-		$defaultMax = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			$defaultMin = LE::readFloat($in);
+			$defaultMax = LE::readFloat($in);
+		}
 		$default = LE::readFloat($in);
 		$id = CommonTypes::getString($in);
 
@@ -69,15 +72,17 @@ final class UpdateAttribute{
 			$modifiers[] = AttributeModifier::read($in);
 		}
 
-		return new self($id, $min, $max, $current, $defaultMin, $defaultMax, $default, $modifiers);
+		return new self($id, $min, $max, $current, $defaultMin ?? $min, $defaultMax ?? $max, $default, $modifiers);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeFloat($out, $this->min);
 		LE::writeFloat($out, $this->max);
 		LE::writeFloat($out, $this->current);
-		LE::writeFloat($out, $this->defaultMin);
-		LE::writeFloat($out, $this->defaultMax);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			LE::writeFloat($out, $this->defaultMin);
+			LE::writeFloat($out, $this->defaultMax);
+		}
 		LE::writeFloat($out, $this->default);
 		CommonTypes::putString($out, $this->id);
 

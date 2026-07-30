@@ -55,7 +55,7 @@ class ResourcePackDataInfoPacket extends DataPacket implements ClientboundPacket
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->packId = CommonTypes::getString($in);
 		$this->maxChunkSize = LE::readUnsignedInt($in);
 		$this->chunkCount = LE::readUnsignedInt($in);
@@ -65,7 +65,7 @@ class ResourcePackDataInfoPacket extends DataPacket implements ClientboundPacket
 		$this->packType = Byte::readUnsigned($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->packId);
 		LE::writeUnsignedInt($out, $this->maxChunkSize);
 		LE::writeUnsignedInt($out, $this->chunkCount);

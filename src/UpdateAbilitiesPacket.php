@@ -38,12 +38,12 @@ class UpdateAbilitiesPacket extends DataPacket implements ClientboundPacket{
 
 	public function getData() : AbilitiesData{ return $this->data; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->data = AbilitiesData::decode($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->data = AbilitiesData::decode($in, $protocolId);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		$this->data->encode($out);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		$this->data->encode($out, $protocolId);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

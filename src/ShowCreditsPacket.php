@@ -38,12 +38,12 @@ class ShowCreditsPacket extends DataPacket implements ClientboundPacket, Serverb
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->playerActorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->status = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->playerActorRuntimeId);
 		VarInt::writeSignedInt($out, $this->status);
 	}

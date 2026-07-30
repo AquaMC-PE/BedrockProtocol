@@ -27,11 +27,11 @@ final class LabTableCombineStackRequestAction extends ItemStackRequestAction{
 
 	public const ID = ItemStackRequestActionType::LAB_TABLE_COMBINE;
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		return new self;
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		//NOOP
 	}
 }

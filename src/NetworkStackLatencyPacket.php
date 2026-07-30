@@ -43,12 +43,12 @@ class NetworkStackLatencyPacket extends DataPacket implements ClientboundPacket,
 		return self::create($timestamp, false);
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->timestamp = LE::readUnsignedLong($in);
 		$this->needResponse = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeUnsignedLong($out, $this->timestamp);
 		CommonTypes::putBool($out, $this->needResponse);
 	}

@@ -52,27 +52,31 @@ class CreativeContentPacket extends DataPacket implements ClientboundPacket{
 	/** @return CreativeItemEntry[] */
 	public function getItems() : array{ return $this->items; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->groups = [];
-		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$this->groups[] = CreativeGroupEntry::read($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			$this->groups = [];
+			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+				$this->groups[] = CreativeGroupEntry::read($in);
+			}
 		}
 
 		$this->items = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$this->items[] = CreativeItemEntry::read($in);
+			$this->items[] = CreativeItemEntry::read($in, $protocolId);
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		VarInt::writeUnsignedInt($out, count($this->groups));
-		foreach($this->groups as $entry){
-			$entry->write($out);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			VarInt::writeUnsignedInt($out, count($this->groups));
+			foreach($this->groups as $entry){
+				$entry->write($out);
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->items));
 		foreach($this->items as $entry){
-			$entry->write($out);
+			$entry->write($out, $protocolId);
 		}
 	}
 

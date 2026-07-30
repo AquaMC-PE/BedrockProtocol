@@ -35,12 +35,12 @@ class ResourcePackChunkRequestPacket extends DataPacket implements ServerboundPa
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->packId = CommonTypes::getString($in);
 		$this->chunkIndex = LE::readUnsignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->packId);
 		LE::writeUnsignedInt($out, $this->chunkIndex);
 	}

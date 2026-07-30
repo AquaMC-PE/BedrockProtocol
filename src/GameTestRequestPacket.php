@@ -77,7 +77,7 @@ class GameTestRequestPacket extends DataPacket implements ServerboundPacket{
 
 	public function getTestName() : string{ return $this->testName; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->maxTestsPerBatch = VarInt::readSignedInt($in);
 		$this->repeatCount = VarInt::readSignedInt($in);
 		$this->rotation = Byte::readUnsigned($in);
@@ -87,7 +87,7 @@ class GameTestRequestPacket extends DataPacket implements ServerboundPacket{
 		$this->testName = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->maxTestsPerBatch);
 		VarInt::writeSignedInt($out, $this->repeatCount);
 		Byte::writeUnsigned($out, $this->rotation);

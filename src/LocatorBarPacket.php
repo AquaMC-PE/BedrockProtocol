@@ -46,17 +46,17 @@ class LocatorBarPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getWaypoints() : array{ return $this->waypoints; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->waypoints = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$this->waypoints[] = LocatorBarWaypointPayload::read($in);
+			$this->waypoints[] = LocatorBarWaypointPayload::read($in, $protocolId);
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->waypoints));
 		foreach($this->waypoints as $waypoint){
-			$waypoint->write($out);
+			$waypoint->write($out, $protocolId);
 		}
 	}
 

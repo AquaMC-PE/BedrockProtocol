@@ -54,7 +54,7 @@ class RequestAbilityPacket extends DataPacket implements ServerboundPacket{
 
 	public function getAbilityValue() : float|bool{ return $this->abilityValue; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->abilityId = VarInt::readSignedInt($in);
 
 		$valueType = Byte::readUnsigned($in);
@@ -71,7 +71,7 @@ class RequestAbilityPacket extends DataPacket implements ServerboundPacket{
 		};
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->abilityId);
 
 		[$valueType, $boolValue, $floatValue] = match(true){

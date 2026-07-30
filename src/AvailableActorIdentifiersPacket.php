@@ -35,11 +35,11 @@ class AvailableActorIdentifiersPacket extends DataPacket implements ClientboundP
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->identifiers = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		$out->writeByteArray($this->identifiers->getEncodedNbt());
 	}
 

@@ -67,7 +67,7 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 
 	public function getCustomShapeCount() : int{ return $this->customShapeCount; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->shapes = [];
 		for($i = 0, $shapesCount = VarInt::readUnsignedInt($in); $i < $shapesCount; ++$i){
 			$this->shapes[] = SerializableVoxelShape::read($in);
@@ -80,10 +80,12 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 			$this->nameMap[$name] = $id;
 		}
 
-		$this->customShapeCount = LE::readUnsignedShort($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			$this->customShapeCount = LE::readUnsignedShort($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->shapes));
 		foreach($this->shapes as $shape){
 			$shape->write($out);
@@ -95,7 +97,9 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 			LE::writeUnsignedShort($out, $id);
 		}
 
-		LE::writeUnsignedShort($out, $this->customShapeCount);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			LE::writeUnsignedShort($out, $this->customShapeCount);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

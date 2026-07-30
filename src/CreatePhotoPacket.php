@@ -43,13 +43,13 @@ class CreatePhotoPacket extends DataPacket implements ServerboundPacket{
 
 	public function getPhotoItemName() : string{ return $this->photoItemName; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorUniqueId = LE::readSignedLong($in); //why be consistent mojang ?????
 		$this->photoName = CommonTypes::getString($in);
 		$this->photoItemName = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeSignedLong($out, $this->actorUniqueId);
 		CommonTypes::putString($out, $this->photoName);
 		CommonTypes::putString($out, $this->photoItemName);

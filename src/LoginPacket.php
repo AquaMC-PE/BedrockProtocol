@@ -43,7 +43,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		return true;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->protocol = BE::readUnsignedInt($in);
 		$this->decodeConnectionRequest(CommonTypes::getString($in));
 	}
@@ -58,7 +58,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		$this->clientDataJwt = $connRequestReader->readByteArray($clientDataJwtLength);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		BE::writeUnsignedInt($out, $this->protocol);
 		CommonTypes::putString($out, $this->encodeConnectionRequest());
 	}

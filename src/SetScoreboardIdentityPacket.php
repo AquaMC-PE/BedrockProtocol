@@ -43,7 +43,7 @@ class SetScoreboardIdentityPacket extends DataPacket implements ClientboundPacke
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->type = Byte::readUnsigned($in);
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$entry = new ScoreboardIdentityPacketEntry();
@@ -56,7 +56,7 @@ class SetScoreboardIdentityPacket extends DataPacket implements ClientboundPacke
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->type);
 		VarInt::writeUnsignedInt($out, count($this->entries));
 		foreach($this->entries as $entry){

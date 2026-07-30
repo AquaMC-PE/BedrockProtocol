@@ -43,13 +43,13 @@ class MotionPredictionHintsPacket extends DataPacket implements ClientboundPacke
 
 	public function isOnGround() : bool{ return $this->onGround; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->motion = CommonTypes::getVector3($in);
 		$this->onGround = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		CommonTypes::putVector3($out, $this->motion);
 		CommonTypes::putBool($out, $this->onGround);

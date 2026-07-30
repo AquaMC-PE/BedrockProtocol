@@ -59,7 +59,7 @@ class NpcDialoguePacket extends DataPacket implements ClientboundPacket{
 
 	public function getActionJson() : string{ return $this->actionJson; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->npcActorUniqueId = LE::readSignedLong($in); //WHY NOT USING STANDARD METHODS, MOJANG
 		$this->actionType = VarInt::readSignedInt($in);
 		$this->dialogue = CommonTypes::getString($in);
@@ -68,7 +68,7 @@ class NpcDialoguePacket extends DataPacket implements ClientboundPacket{
 		$this->actionJson = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeSignedLong($out, $this->npcActorUniqueId);
 		VarInt::writeSignedInt($out, $this->actionType);
 		CommonTypes::putString($out, $this->dialogue);

@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 use Ramsey\Uuid\UuidInterface;
@@ -107,7 +108,7 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		return $this->recipeNetId;
 	}
 
-	public static function decode(int $recipeType, ByteBufferReader $in) : self{
+	public static function decode(int $recipeType, ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::getString($in);
 		$width = VarInt::readSignedInt($in);
 		$height = VarInt::readSignedInt($in);
@@ -125,15 +126,20 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		$uuid = CommonTypes::getUUID($in);
 		$block = CommonTypes::getString($in);
 		$priority = VarInt::readSignedInt($in);
-		$symmetric = CommonTypes::getBool($in);
-		$unlockingRequirement = RecipeUnlockingRequirement::read($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			$symmetric = CommonTypes::getBool($in);
+
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+				$unlockingRequirement = RecipeUnlockingRequirement::read($in);
+			}
+		}
 
 		$recipeNetId = CommonTypes::readRecipeNetId($in);
 
-		return new self($recipeType, $recipeId, $input, $output, $uuid, $block, $priority, $symmetric, $unlockingRequirement, $recipeNetId);
+		return new self($recipeType, $recipeId, $input, $output, $uuid, $block, $priority, $symmetric ?? true, $unlockingRequirement ?? new RecipeUnlockingRequirement(null), $recipeNetId);
 	}
 
-	public function encode(ByteBufferWriter $out) : void{
+	public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->recipeId);
 		VarInt::writeSignedInt($out, $this->getWidth());
 		VarInt::writeSignedInt($out, $this->getHeight());
@@ -151,8 +157,13 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		CommonTypes::putUUID($out, $this->uuid);
 		CommonTypes::putString($out, $this->blockName);
 		VarInt::writeSignedInt($out, $this->priority);
-		CommonTypes::putBool($out, $this->symmetric);
-		$this->unlockingRequirement->write($out);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			CommonTypes::putBool($out, $this->symmetric);
+
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+				$this->unlockingRequirement->write($out);
+			}
+		}
 
 		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
 	}

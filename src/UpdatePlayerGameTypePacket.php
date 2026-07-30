@@ -45,16 +45,24 @@ class UpdatePlayerGameTypePacket extends DataPacket implements ClientboundPacket
 
 	public function getTick() : int{ return $this->tick; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->gameMode = VarInt::readSignedInt($in);
 		$this->playerActorUniqueId = CommonTypes::getActorUniqueId($in);
-		$this->tick = VarInt::readUnsignedLong($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			$this->tick = VarInt::readUnsignedLong($in);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			$this->tick = VarInt::readUnsignedInt($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->gameMode);
 		CommonTypes::putActorUniqueId($out, $this->playerActorUniqueId);
-		VarInt::writeUnsignedLong($out, $this->tick);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			VarInt::writeUnsignedLong($out, $this->tick);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			VarInt::writeUnsignedInt($out, $this->tick);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -34,12 +34,12 @@ class MapCreateLockedCopyPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->originalMapId = CommonTypes::getActorUniqueId($in);
 		$this->newMapId = CommonTypes::getActorUniqueId($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->originalMapId);
 		CommonTypes::putActorUniqueId($out, $this->newMapId);
 	}

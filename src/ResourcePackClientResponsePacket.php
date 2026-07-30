@@ -44,7 +44,7 @@ class ResourcePackClientResponsePacket extends DataPacket implements Serverbound
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->status = Byte::readUnsigned($in);
 		$entryCount = LE::readUnsignedShort($in);
 		$this->packIds = [];
@@ -53,7 +53,7 @@ class ResourcePackClientResponsePacket extends DataPacket implements Serverbound
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->status);
 		LE::writeUnsignedShort($out, count($this->packIds));
 		foreach($this->packIds as $id){

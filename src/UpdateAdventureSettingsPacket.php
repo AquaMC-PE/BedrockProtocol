@@ -56,7 +56,7 @@ class UpdateAdventureSettingsPacket extends DataPacket implements ClientboundPac
 
 	public function isAutoJump() : bool{ return $this->autoJump; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->noAttackingMobs = CommonTypes::getBool($in);
 		$this->noAttackingPlayers = CommonTypes::getBool($in);
 		$this->worldImmutable = CommonTypes::getBool($in);
@@ -64,7 +64,7 @@ class UpdateAdventureSettingsPacket extends DataPacket implements ClientboundPac
 		$this->autoJump = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->noAttackingMobs);
 		CommonTypes::putBool($out, $this->noAttackingPlayers);
 		CommonTypes::putBool($out, $this->worldImmutable);

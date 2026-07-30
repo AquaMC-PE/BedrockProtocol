@@ -45,7 +45,7 @@ class ClientCacheMissResponsePacket extends DataPacket implements ClientboundPac
 		return $this->blobs;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$hash = LE::readUnsignedLong($in);
 			$payload = CommonTypes::getString($in);
@@ -53,7 +53,7 @@ class ClientCacheMissResponsePacket extends DataPacket implements ClientboundPac
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->blobs));
 		foreach($this->blobs as $blob){
 			LE::writeUnsignedLong($out, $blob->getHash());

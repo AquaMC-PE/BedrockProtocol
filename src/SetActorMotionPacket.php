@@ -38,16 +38,20 @@ class SetActorMotionPacket extends DataPacket implements ClientboundPacket, Serv
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->motion = CommonTypes::getVector3($in);
-		$this->tick = VarInt::readUnsignedLong($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			$this->tick = VarInt::readUnsignedLong($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		CommonTypes::putVector3($out, $this->motion);
-		VarInt::writeUnsignedLong($out, $this->tick);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			VarInt::writeUnsignedLong($out, $this->tick);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

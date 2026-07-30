@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 use Ramsey\Uuid\UuidInterface;
@@ -81,7 +82,7 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 		return $this->recipeNetId;
 	}
 
-	public static function decode(int $recipeType, ByteBufferReader $in) : self{
+	public static function decode(int $recipeType, ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::getString($in);
 		$input = [];
 		for($j = 0, $ingredientCount = VarInt::readUnsignedInt($in); $j < $ingredientCount; ++$j){
@@ -94,14 +95,16 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 		$uuid = CommonTypes::getUUID($in);
 		$block = CommonTypes::getString($in);
 		$priority = VarInt::readSignedInt($in);
-		$unlockingRequirement = RecipeUnlockingRequirement::read($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			$unlockingRequirement = RecipeUnlockingRequirement::read($in);
+		}
 
 		$recipeNetId = CommonTypes::readRecipeNetId($in);
 
-		return new self($recipeType, $recipeId, $input, $output, $uuid, $block, $priority, $unlockingRequirement, $recipeNetId);
+		return new self($recipeType, $recipeId, $input, $output, $uuid, $block, $priority, $unlockingRequirement ?? new RecipeUnlockingRequirement(null), $recipeNetId);
 	}
 
-	public function encode(ByteBufferWriter $out) : void{
+	public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->recipeId);
 		VarInt::writeUnsignedInt($out, count($this->inputs));
 		foreach($this->inputs as $item){
@@ -116,7 +119,9 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 		CommonTypes::putUUID($out, $this->uuid);
 		CommonTypes::putString($out, $this->blockName);
 		VarInt::writeSignedInt($out, $this->priority);
-		$this->unlockingRequirement->write($out);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			$this->unlockingRequirement->write($out);
+		}
 
 		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
 	}

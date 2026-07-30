@@ -52,7 +52,7 @@ class UnlockedRecipesPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getRecipes() : array{ return $this->recipes; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->type = LE::readUnsignedInt($in);
 		$this->recipes = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
@@ -60,7 +60,7 @@ class UnlockedRecipesPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeUnsignedInt($out, $this->type);
 		VarInt::writeUnsignedInt($out, count($this->recipes));
 		foreach($this->recipes as $recipe){

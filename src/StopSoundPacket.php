@@ -36,16 +36,20 @@ class StopSoundPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->soundName = CommonTypes::getString($in);
 		$this->stopAll = CommonTypes::getBool($in);
-		$this->stopLegacyMusic = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->stopLegacyMusic = CommonTypes::getBool($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->soundName);
 		CommonTypes::putBool($out, $this->stopAll);
-		CommonTypes::putBool($out, $this->stopLegacyMusic);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			CommonTypes::putBool($out, $this->stopLegacyMusic);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

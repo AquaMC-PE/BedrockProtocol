@@ -45,7 +45,7 @@ final class DataStoreChange implements DataStoreOperation{
 
 	public function getData() : ?DynamicValue{ return $this->data; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
 		$property = CommonTypes::getString($in);
 		$updateCount = LE::readUnsignedInt($in);
@@ -61,7 +61,7 @@ final class DataStoreChange implements DataStoreOperation{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 		CommonTypes::putString($out, $this->property);
 		LE::writeUnsignedInt($out, $this->updateCount);

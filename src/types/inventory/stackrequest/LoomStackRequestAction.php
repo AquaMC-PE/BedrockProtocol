@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
@@ -37,14 +38,18 @@ final class LoomStackRequestAction extends ItemStackRequestAction{
 
 	public function getRepetitions() : int{ return $this->repetitions; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$patternId = CommonTypes::getString($in);
-		$repetitions = Byte::readUnsigned($in);
-		return new self($patternId, $repetitions);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$repetitions = Byte::readUnsigned($in);
+		}
+		return new self($patternId, $repetitions ?? 1);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->patternId);
-		Byte::writeUnsigned($out, $this->repetitions);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			Byte::writeUnsigned($out, $this->repetitions);
+		}
 	}
 }

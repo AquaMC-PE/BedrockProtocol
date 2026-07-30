@@ -42,7 +42,7 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 
 	public int $requestId;
 	/** @var InventoryTransactionChangedSlotsHack[] */
-	public ?array $requestChangedSlots;
+	public ?array $requestChangedSlots = null;
 	public TransactionData $trData;
 
 	/**
@@ -57,22 +57,28 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->requestId = CommonTypes::readLegacyItemStackRequestId($in);
 
-		$this->requestChangedSlots = CommonTypes::readOptional($in, static function(ByteBufferReader $in) : array{
-			$result = [];
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->requestChangedSlots = CommonTypes::readOptional($in, static function(ByteBufferReader $in) : array{
+				$result = [];
+				for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+					$result[] = InventoryTransactionChangedSlotsHack::read($in);
+				}
+				return $result;
+			});
+		}elseif($this->requestId !== 0){
 			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-				$result[] = InventoryTransactionChangedSlotsHack::read($in);
+				$this->requestChangedSlots[] = InventoryTransactionChangedSlotsHack::read($in);
 			}
-			return $result;
-		});
+		}
 
-		if(Byte::readUnsigned($in) !== 1){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && Byte::readUnsigned($in) !== 1){
 			throw new PacketDecodeException("Dummy optional bool for transactionType should always be 1");
 		}
 		$transactionType = VarInt::readUnsignedInt($in);
-		if(Byte::readUnsigned($in) !== 1){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && Byte::readUnsigned($in) !== 1){
 			throw new PacketDecodeException("Dummy optional bool for trData should always be 1");
 		}
 		$this->trData = match($transactionType) {
@@ -83,23 +89,33 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 			ReleaseItemTransactionData::ID => new ReleaseItemTransactionData(),
 			default => throw new PacketDecodeException("Unknown transaction type $transactionType"),
 		};
-		$this->trData->decodeTransaction($in);
+		$this->trData->decodeTransaction($in, $protocolId);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeLegacyItemStackRequestId($out, $this->requestId);
 
-		CommonTypes::writeOptional($out, $this->requestChangedSlots, static function(ByteBufferWriter $out, array $value) : void{
-			VarInt::writeUnsignedInt($out, count($value));
-			foreach($value as $changedSlots){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			CommonTypes::writeOptional($out, $this->requestChangedSlots, static function(ByteBufferWriter $out, array $value) : void{
+				VarInt::writeUnsignedInt($out, count($value));
+				foreach($value as $changedSlots){
+					$changedSlots->write($out);
+				}
+			});
+
+			Byte::writeUnsigned($out, 1);
+		}elseif($this->requestId !== 0){
+			VarInt::writeUnsignedInt($out, count($this->requestChangedSlots ?? []));
+			foreach(($this->requestChangedSlots ?? []) as $changedSlots){
 				$changedSlots->write($out);
 			}
-		});
-
-		Byte::writeUnsigned($out, 1);
+		}
 		VarInt::writeUnsignedInt($out, $this->trData->getTypeId());
-		Byte::writeUnsigned($out, 1);
-		$this->trData->encodeTransaction($out);
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			Byte::writeUnsigned($out, 1);
+		}
+		$this->trData->encodeTransaction($out, $protocolId);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

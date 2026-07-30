@@ -34,11 +34,11 @@ class EduUriResourcePacket extends DataPacket implements ClientboundPacket{
 
 	public function getResource() : EducationUriResource{ return $this->resource; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->resource = EducationUriResource::read($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		$this->resource->write($out);
 	}
 

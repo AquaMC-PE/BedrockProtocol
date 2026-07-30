@@ -20,6 +20,7 @@ use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\LevelEvent;
+use pocketmine\network\mcpe\protocol\types\ParticleIds;
 
 class LevelEventPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LEVEL_EVENT_PACKET;
@@ -40,17 +41,20 @@ class LevelEventPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	public static function standardParticle(int $particleId, int $data, Vector3 $position) : self{
+	public static function standardParticle(int $particleId, int $data, Vector3 $position, int $protocolId) : self{
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_20_50 && $particleId >= ParticleIds::BREEZE_WIND_EXPLOSION){
+			--$particleId;
+		}
 		return self::create(LevelEvent::ADD_PARTICLE_MASK | $particleId, $data, $position);
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->eventId = VarInt::readSignedInt($in);
 		$this->position = CommonTypes::getVector3($in);
 		$this->eventData = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->eventId);
 		CommonTypes::putVector3Nullable($out, $this->position);
 		VarInt::writeSignedInt($out, $this->eventData);

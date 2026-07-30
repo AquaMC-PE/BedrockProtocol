@@ -56,9 +56,15 @@ interface PacketHandlerInterface{
 
 	public function handleMovePlayer(MovePlayerPacket $packet) : bool;
 
+	public function handlePassengerJump(PassengerJumpPacket $packet) : bool;
+
 	public function handleUpdateBlock(UpdateBlockPacket $packet) : bool;
 
 	public function handleAddPainting(AddPaintingPacket $packet) : bool;
+
+	public function handleTickSync(TickSyncPacket $packet) : bool;
+
+	public function handleLevelSoundEventPacketV1(LevelSoundEventPacketV1 $packet) : bool;
 
 	public function handleLevelEvent(LevelEventPacket $packet) : bool;
 
@@ -114,9 +120,13 @@ interface PacketHandlerInterface{
 
 	public function handleCraftingData(CraftingDataPacket $packet) : bool;
 
+	public function handleCraftingEvent(CraftingEventPacket $packet) : bool;
+
 	public function handleGuiDataPickItem(GuiDataPickItemPacket $packet) : bool;
 
 	public function handleBlockActorData(BlockActorDataPacket $packet) : bool;
+
+	public function handlePlayerInput(PlayerInputPacket $packet) : bool;
 
 	public function handleLevelChunk(LevelChunkPacket $packet) : bool;
 
@@ -235,6 +245,8 @@ interface PacketHandlerInterface{
 	public function handleSpawnParticleEffect(SpawnParticleEffectPacket $packet) : bool;
 
 	public function handleAvailableActorIdentifiers(AvailableActorIdentifiersPacket $packet) : bool;
+
+	public function handleLevelSoundEventPacketV2(LevelSoundEventPacketV2 $packet) : bool;
 
 	public function handleNetworkChunkPublisherUpdate(NetworkChunkPublisherUpdatePacket $packet) : bool;
 
@@ -382,6 +394,8 @@ interface PacketHandlerInterface{
 
 	public function handleCameraInstruction(CameraInstructionPacket $packet) : bool;
 
+	public function handleCompressedBiomeDefinitionList(CompressedBiomeDefinitionListPacket $packet) : bool;
+
 	public function handleTrimData(TrimDataPacket $packet) : bool;
 
 	public function handleOpenSign(OpenSignPacket $packet) : bool;
@@ -413,6 +427,8 @@ interface PacketHandlerInterface{
 	public function handleContainerRegistryCleanup(ContainerRegistryCleanupPacket $packet) : bool;
 
 	public function handleMovementEffect(MovementEffectPacket $packet) : bool;
+
+	public function handleSetMovementAuthority(SetMovementAuthorityPacket $packet) : bool;
 
 	public function handleCameraAimAssistPresets(CameraAimAssistPresetsPacket $packet) : bool;
 

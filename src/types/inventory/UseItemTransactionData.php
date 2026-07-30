@@ -20,6 +20,7 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
@@ -84,32 +85,76 @@ class UseItemTransactionData extends TransactionData{
 
 	public function getClientCooldownState() : int{ return $this->clientCooldownState; }
 
-	protected function decodeData(ByteBufferReader $in) : void{
-		$this->actionType = VarInt::readSignedInt($in);
-		$this->triggerType = TriggerType::fromPacket(Byte::readUnsigned($in));
-		$this->blockPosition = CommonTypes::getBlockPosition($in);
-		$this->face = Byte::readUnsigned($in);
+	protected function decodeData(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->actionType = VarInt::readSignedInt($in);
+		}else{
+			$this->actionType = VarInt::readUnsignedInt($in);
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->triggerType = TriggerType::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? Byte::readUnsigned($in) : VarInt::readUnsignedInt($in));
+		}
+		$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->face = Byte::readUnsigned($in);
+		}else{
+			$this->face = VarInt::readSignedInt($in);
+		}
 		$this->hotbarSlot = VarInt::readSignedInt($in);
-		$this->itemInHand = CommonTypes::getNetworkItemStackDescriptor($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->itemInHand = CommonTypes::getNetworkItemStackDescriptor($in);
+		}else{
+			$this->itemInHand = CommonTypes::getItemStackWrapper($in);
+		}
 		$this->playerPosition = CommonTypes::getVector3($in);
 		$this->clickPosition = CommonTypes::getVector3($in);
 		$this->blockRuntimeId = VarInt::readUnsignedInt($in);
-		$this->clientInteractPrediction = PredictedResult::fromPacket(Byte::readUnsigned($in));
-		$this->clientCooldownState = Byte::readUnsigned($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->clientInteractPrediction = PredictedResult::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? Byte::readUnsigned($in) : VarInt::readUnsignedInt($in));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+				$this->clientCooldownState = Byte::readUnsigned($in);
+			}
+		}
 	}
 
-	protected function encodeData(ByteBufferWriter $out) : void{
-		VarInt::writeSignedInt($out, $this->actionType);
-		Byte::writeUnsigned($out, $this->triggerType->value);
-		CommonTypes::putBlockPosition($out, $this->blockPosition);
-		Byte::writeUnsigned($out, $this->face);
+	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			VarInt::writeSignedInt($out, $this->actionType);
+		}else{
+			VarInt::writeUnsignedInt($out, $this->actionType);
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+				Byte::writeUnsigned($out, $this->triggerType->value);
+			}else{
+				VarInt::writeUnsignedInt($out, $this->triggerType->value);
+			}
+		}
+		CommonTypes::putBlockPosition($out, $this->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			Byte::writeUnsigned($out, $this->face);
+		}else{
+			VarInt::writeSignedInt($out, $this->face);
+		}
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
-		CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand);
+		}else{
+			CommonTypes::putItemStackWrapper($out, $this->itemInHand);
+		}
 		CommonTypes::putVector3($out, $this->playerPosition);
 		CommonTypes::putVector3($out, $this->clickPosition);
 		VarInt::writeUnsignedInt($out, $this->blockRuntimeId);
-		Byte::writeUnsigned($out, $this->clientInteractPrediction->value);
-		Byte::writeUnsigned($out, $this->clientCooldownState);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+				Byte::writeUnsigned($out, $this->clientInteractPrediction->value);
+			}else{
+				VarInt::writeUnsignedInt($out, $this->clientInteractPrediction->value);
+			}
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+				Byte::writeUnsigned($out, $this->clientCooldownState);
+			}
+		}
 	}
 
 	/**

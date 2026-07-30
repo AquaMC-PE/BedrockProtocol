@@ -40,7 +40,7 @@ class MapInfoRequestPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->mapId = CommonTypes::getActorUniqueId($in);
 
 		$this->clientPixels = [];
@@ -53,7 +53,7 @@ class MapInfoRequestPacket extends DataPacket implements ServerboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->mapId);
 
 		LE::writeUnsignedInt($out, count($this->clientPixels));

@@ -41,12 +41,12 @@ class PositionTrackingDBClientRequestPacket extends DataPacket implements Server
 
 	public function getTrackingId() : int{ return $this->trackingId; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->action = Byte::readUnsigned($in);
 		$this->trackingId = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->action);
 		VarInt::writeSignedInt($out, $this->trackingId);
 	}

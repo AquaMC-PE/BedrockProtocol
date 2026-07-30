@@ -37,14 +37,14 @@ final class MineBlockStackRequestAction extends ItemStackRequestAction{
 
 	public function getStackId() : int{ return $this->stackId; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$hotbarSlot = VarInt::readSignedInt($in);
 		$predictedDurability = VarInt::readSignedInt($in);
 		$stackId = CommonTypes::readItemStackNetIdVariant($in);
 		return new self($hotbarSlot, $predictedDurability, $stackId);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
 		VarInt::writeSignedInt($out, $this->predictedDurability);
 		CommonTypes::writeItemStackNetIdVariant($out, $this->stackId);

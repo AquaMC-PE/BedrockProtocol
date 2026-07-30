@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\camera;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -55,54 +56,62 @@ final class CameraAimAssistPresetExclusionDefinition{
 	 */
 	public function getEntityTypeFamilies() : array{ return $this->entityTypeFamilies; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$blocks = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$blocks[] = CommonTypes::getString($in);
 		}
 
-		$entities = [];
-		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$entities[] = CommonTypes::getString($in);
-		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$entities = [];
+			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+				$entities[] = CommonTypes::getString($in);
+			}
 
-		$blockTags = [];
-		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$blockTags[] = CommonTypes::getString($in);
-		}
+			$blockTags = [];
+			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+				$blockTags[] = CommonTypes::getString($in);
+			}
 
-		$entityTypeFamilies = [];
-		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$entityTypeFamilies[] = CommonTypes::getString($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+				$entityTypeFamilies = [];
+				for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+					$entityTypeFamilies[] = CommonTypes::getString($in);
+				}
+			}
 		}
 
 		return new self(
 			$blocks,
-			$entities,
-			$blockTags,
-			$entityTypeFamilies
+			$entities ?? [],
+			$blockTags ?? [],
+			$entityTypeFamilies ?? []
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->blocks));
 		foreach($this->blocks as $block){
 			CommonTypes::putString($out, $block);
 		}
 
-		VarInt::writeUnsignedInt($out, count($this->entities));
-		foreach($this->entities as $entity){
-			CommonTypes::putString($out, $entity);
-		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			VarInt::writeUnsignedInt($out, count($this->entities));
+			foreach($this->entities as $entity){
+				CommonTypes::putString($out, $entity);
+			}
 
-		VarInt::writeUnsignedInt($out, count($this->blockTags));
-		foreach($this->blockTags as $blockTag){
-			CommonTypes::putString($out, $blockTag);
-		}
+			VarInt::writeUnsignedInt($out, count($this->blockTags));
+			foreach($this->blockTags as $blockTag){
+				CommonTypes::putString($out, $blockTag);
+			}
 
-		VarInt::writeUnsignedInt($out, count($this->entityTypeFamilies));
-		foreach($this->entityTypeFamilies as $entityTypeFamily){
-			CommonTypes::putString($out, $entityTypeFamily);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+				VarInt::writeUnsignedInt($out, count($this->entityTypeFamilies));
+				foreach($this->entityTypeFamilies as $entityTypeFamily){
+					CommonTypes::putString($out, $entityTypeFamily);
+				}
+			}
 		}
 	}
 }

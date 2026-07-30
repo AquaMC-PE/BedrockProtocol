@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\camera;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -28,6 +29,7 @@ final class CameraAimAssistPreset{
 	 */
 	public function __construct(
 		private string $identifier,
+		private string $categories,
 		private CameraAimAssistPresetExclusionDefinition $exclusionSettings,
 		private array $liquidTargetingList,
 		private array $itemSettings,
@@ -36,6 +38,8 @@ final class CameraAimAssistPreset{
 	){}
 
 	public function getIdentifier() : string{ return $this->identifier; }
+
+	public function getCategories() : string{ return $this->categories; }
 
 	public function getExclusionSettings() : CameraAimAssistPresetExclusionDefinition{ return $this->exclusionSettings; }
 
@@ -53,9 +57,13 @@ final class CameraAimAssistPreset{
 
 	public function getDefaultHandSettings() : ?string{ return $this->defaultHandSettings; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$identifier = CommonTypes::getString($in);
-		$exclusionList = CameraAimAssistPresetExclusionDefinition::read($in);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_60){
+			$categories = CommonTypes::getString($in);
+		}
+
+		$exclusionList = CameraAimAssistPresetExclusionDefinition::read($in, $protocolId);
 
 		$liquidTargetingList = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
@@ -72,6 +80,7 @@ final class CameraAimAssistPreset{
 
 		return new self(
 			$identifier,
+			$categories ?? "",
 			$exclusionList,
 			$liquidTargetingList,
 			$itemSettings,
@@ -80,9 +89,13 @@ final class CameraAimAssistPreset{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->identifier);
-		$this->exclusionSettings->write($out);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_60){
+			CommonTypes::putString($out, $this->categories);
+		}
+
+		$this->exclusionSettings->write($out, $protocolId);
 
 		VarInt::writeUnsignedInt($out, count($this->liquidTargetingList));
 		foreach($this->liquidTargetingList as $liquidTargeting){

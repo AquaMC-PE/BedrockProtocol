@@ -66,7 +66,7 @@ class SetTitlePacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->type = VarInt::readSignedInt($in);
 		$this->text = CommonTypes::getString($in);
 		$this->fadeInTime = VarInt::readSignedInt($in);
@@ -74,10 +74,12 @@ class SetTitlePacket extends DataPacket implements ClientboundPacket{
 		$this->fadeOutTime = VarInt::readSignedInt($in);
 		$this->xuid = CommonTypes::getString($in);
 		$this->platformOnlineId = CommonTypes::getString($in);
-		$this->filteredTitleText = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->filteredTitleText = CommonTypes::getString($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->type);
 		CommonTypes::putString($out, $this->text);
 		VarInt::writeSignedInt($out, $this->fadeInTime);
@@ -85,7 +87,9 @@ class SetTitlePacket extends DataPacket implements ClientboundPacket{
 		VarInt::writeSignedInt($out, $this->fadeOutTime);
 		CommonTypes::putString($out, $this->xuid);
 		CommonTypes::putString($out, $this->platformOnlineId);
-		CommonTypes::putString($out, $this->filteredTitleText);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			CommonTypes::putString($out, $this->filteredTitleText);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

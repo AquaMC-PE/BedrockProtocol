@@ -16,6 +16,7 @@ namespace pocketmine\network\mcpe\protocol\types;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 final class ServerJoinInformation{
@@ -32,21 +33,42 @@ final class ServerJoinInformation{
 
 	public function getPresenceInfo() : ?PresenceInfo{ return $this->presenceInfo; }
 
-	public static function read(ByteBufferReader $in) : self{
-		$gatheringJoinInfo = CommonTypes::readOptional($in, GatheringJoinInfo::read(...));
-		$storeEntryPointInfo = CommonTypes::readOptional($in, StoreEntryPointInfo::read(...));
-		$presenceInfo = CommonTypes::readOptional($in, PresenceInfo::read(...));
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$storeEntryPointInfo = null;
+
+		$gatheringJoinInfo = CommonTypes::readOptional($in, function(ByteBufferReader $in) use ($protocolId, &$storeEntryPointInfo) : GatheringJoinInfo{
+			$gatheringJoinInfo = GatheringJoinInfo::read($in, $protocolId);
+			if($protocolId <= ProtocolInfo::PROTOCOL_1_26_0){
+				$storeId = CommonTypes::getString($in);
+				$storeEntryPointInfo = new StoreEntryPointInfo($storeId, "");
+			}
+
+			return $gatheringJoinInfo;
+		});
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			$storeEntryPointInfo = CommonTypes::readOptional($in, StoreEntryPointInfo::read(...));
+			$presenceInfo = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => PresenceInfo::read($in, $protocolId));
+		}
 
 		return new self(
 			$gatheringJoinInfo,
 			$storeEntryPointInfo,
-			$presenceInfo,
+			$presenceInfo ?? null,
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
-		CommonTypes::writeOptional($out, $this->gatheringJoinInfo, fn(ByteBufferWriter $out, GatheringJoinInfo $info) => $info->write($out));
-		CommonTypes::writeOptional($out, $this->storeEntryPointInfo, fn(ByteBufferWriter $out, StoreEntryPointInfo $info) => $info->write($out));
-		CommonTypes::writeOptional($out, $this->presenceInfo, fn(ByteBufferWriter $out, PresenceInfo $info) => $info->write($out));
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::writeOptional($out, $this->gatheringJoinInfo, function(ByteBufferWriter $out, GatheringJoinInfo $info) use ($protocolId) : void{
+			$info->write($out, $protocolId);
+			if($protocolId <= ProtocolInfo::PROTOCOL_1_26_0){
+				CommonTypes::putString($out, $this->storeEntryPointInfo?->getId() ?? "");
+			}
+		});
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			CommonTypes::writeOptional($out, $this->storeEntryPointInfo, fn(ByteBufferWriter $out, StoreEntryPointInfo $info) => $info->write($out));
+			CommonTypes::writeOptional($out, $this->presenceInfo, fn(ByteBufferWriter $out, PresenceInfo $info) => $info->write($out, $protocolId));
+		}
 	}
 }

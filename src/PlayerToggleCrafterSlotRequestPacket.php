@@ -45,7 +45,7 @@ class PlayerToggleCrafterSlotRequestPacket extends DataPacket implements Serverb
 
 	public function isDisabled() : bool{ return $this->disabled; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$x = LE::readSignedInt($in);
 		$y = LE::readSignedInt($in);
 		$z = LE::readSignedInt($in);
@@ -54,7 +54,7 @@ class PlayerToggleCrafterSlotRequestPacket extends DataPacket implements Serverb
 		$this->disabled = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeSignedInt($out, $this->position->getX());
 		LE::writeSignedInt($out, $this->position->getY());
 		LE::writeSignedInt($out, $this->position->getZ());

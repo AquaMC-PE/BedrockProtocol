@@ -59,13 +59,13 @@ class RequestPermissionsPacket extends DataPacket implements ServerboundPacket{
 
 	public function getCustomFlags() : int{ return $this->customFlags; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->targetActorUniqueId = LE::readSignedLong($in);
 		$this->playerPermission = VarInt::readSignedInt($in);
 		$this->customFlags = LE::readUnsignedShort($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeSignedLong($out, $this->targetActorUniqueId);
 		VarInt::writeSignedInt($out, $this->playerPermission);
 		LE::writeUnsignedShort($out, $this->customFlags);

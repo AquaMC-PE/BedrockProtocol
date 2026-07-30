@@ -35,12 +35,12 @@ class ModalFormRequestPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->formId = VarInt::readUnsignedInt($in);
 		$this->formData = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->formId);
 		CommonTypes::putString($out, $this->formData);
 	}

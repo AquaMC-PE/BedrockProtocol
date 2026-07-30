@@ -23,6 +23,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\BlockPaletteEntry;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
+use pocketmine\network\mcpe\protocol\types\ItemTypeEntry;
 use pocketmine\network\mcpe\protocol\types\LevelSettings;
 use pocketmine\network\mcpe\protocol\types\NetworkPermissions;
 use pocketmine\network\mcpe\protocol\types\PlayerMovementSettings;
@@ -61,6 +62,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 	public UuidInterface $worldTemplateId; //why is this here twice ??? mojang
 	public bool $enableClientSideChunkGeneration;
 	public bool $blockNetworkIdsAreHashes = false; //new in 1.19.80, possibly useful for multi version
+	public bool $enableTickDeathSystems = false;
 	public NetworkPermissions $networkPermissions;
 	public bool $isLoggingChat = false;
 	public ?ServerJoinInformation $serverJoinInformation;
@@ -80,10 +82,18 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 	public int $blockPaletteChecksum;
 
 	/**
+	 * @var ItemTypeEntry[]
+	 * @phpstan-var list<ItemTypeEntry>
+	 */
+	public array $itemTable;
+
+	/**
 	 * @generate-create-func
 	 * @param BlockPaletteEntry[] $blockPalette
+	 * @param ItemTypeEntry[]     $itemTable
 	 * @phpstan-param CacheableNbt<CompoundTag> $playerActorProperties
 	 * @phpstan-param list<BlockPaletteEntry>   $blockPalette
+	 * @phpstan-param list<ItemTypeEntry>       $itemTable
 	 */
 	public static function create(
 		int $actorUniqueId,
@@ -107,12 +117,14 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		UuidInterface $worldTemplateId,
 		bool $enableClientSideChunkGeneration,
 		bool $blockNetworkIdsAreHashes,
+		bool $enableTickDeathSystems,
 		NetworkPermissions $networkPermissions,
 		bool $isLoggingChat,
 		?ServerJoinInformation $serverJoinInformation,
 		ServerTelemetryData $serverTelemetryData,
 		array $blockPalette,
 		int $blockPaletteChecksum,
+		array $itemTable,
 	) : self{
 		$result = new self;
 		$result->actorUniqueId = $actorUniqueId;
@@ -136,16 +148,18 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		$result->worldTemplateId = $worldTemplateId;
 		$result->enableClientSideChunkGeneration = $enableClientSideChunkGeneration;
 		$result->blockNetworkIdsAreHashes = $blockNetworkIdsAreHashes;
+		$result->enableTickDeathSystems = $enableTickDeathSystems;
 		$result->networkPermissions = $networkPermissions;
 		$result->isLoggingChat = $isLoggingChat;
 		$result->serverJoinInformation = $serverJoinInformation;
 		$result->serverTelemetryData = $serverTelemetryData;
 		$result->blockPalette = $blockPalette;
 		$result->blockPaletteChecksum = $blockPaletteChecksum;
+		$result->itemTable = $itemTable;
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->playerGamemode = VarInt::readSignedInt($in);
@@ -155,13 +169,13 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		$this->pitch = LE::readFloat($in);
 		$this->yaw = LE::readFloat($in);
 
-		$this->levelSettings = LevelSettings::read($in);
+		$this->levelSettings = LevelSettings::read($in, $this->serverTelemetryData, $protocolId);
 
 		$this->levelId = CommonTypes::getString($in);
 		$this->worldName = CommonTypes::getString($in);
 		$this->premiumWorldTemplateId = CommonTypes::getString($in);
 		$this->isTrial = CommonTypes::getBool($in);
-		$this->playerMovementSettings = PlayerMovementSettings::read($in);
+		$this->playerMovementSettings = PlayerMovementSettings::read($in, $protocolId);
 		$this->currentTick = LE::readUnsignedLong($in);
 
 		$this->enchantmentSeed = VarInt::readSignedInt($in);
@@ -173,6 +187,17 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 			$this->blockPalette[] = new BlockPaletteEntry($blockName, new CacheableNbt($state));
 		}
 
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_50){
+			$this->itemTable = [];
+			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+				$stringId = CommonTypes::getString($in);
+				$numericId = LE::readSignedShort($in);
+				$isComponentBased = CommonTypes::getBool($in);
+
+				$this->itemTable[] = new ItemTypeEntry($stringId, $numericId, $isComponentBased, -1, new CacheableNbt(new CompoundTag()));
+			}
+		}
+
 		$this->multiplayerCorrelationId = CommonTypes::getString($in);
 		$this->enableNewInventorySystem = CommonTypes::getBool($in);
 		$this->serverSoftwareVersion = CommonTypes::getString($in);
@@ -181,13 +206,20 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		$this->worldTemplateId = CommonTypes::getUUID($in);
 		$this->enableClientSideChunkGeneration = CommonTypes::getBool($in);
 		$this->blockNetworkIdsAreHashes = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100 && $protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
+			$this->enableTickDeathSystems = CommonTypes::getBool($in);
+		}
 		$this->networkPermissions = NetworkPermissions::decode($in);
-		$this->isLoggingChat = CommonTypes::getBool($in);
-		$this->serverJoinInformation = CommonTypes::readOptional($in, ServerJoinInformation::read(...));
-		$this->serverTelemetryData = ServerTelemetryData::read($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+				$this->isLoggingChat = CommonTypes::getBool($in);
+			}
+			$this->serverJoinInformation = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => ServerJoinInformation::read($in, $protocolId));
+			$this->serverTelemetryData = ServerTelemetryData::read($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		VarInt::writeSignedInt($out, $this->playerGamemode);
@@ -197,13 +229,13 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		LE::writeFloat($out, $this->pitch);
 		LE::writeFloat($out, $this->yaw);
 
-		$this->levelSettings->write($out);
+		$this->levelSettings->write($out, $this->serverTelemetryData, $protocolId);
 
 		CommonTypes::putString($out, $this->levelId);
 		CommonTypes::putString($out, $this->worldName);
 		CommonTypes::putString($out, $this->premiumWorldTemplateId);
 		CommonTypes::putBool($out, $this->isTrial);
-		$this->playerMovementSettings->write($out);
+		$this->playerMovementSettings->write($out, $protocolId);
 		LE::writeUnsignedLong($out, $this->currentTick);
 
 		VarInt::writeSignedInt($out, $this->enchantmentSeed);
@@ -214,6 +246,15 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 			$out->writeByteArray($entry->getStates()->getEncodedNbt());
 		}
 
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_50){
+			VarInt::writeUnsignedInt($out, count($this->itemTable));
+			foreach($this->itemTable as $entry){
+				CommonTypes::putString($out, $entry->getStringId());
+				LE::writeSignedShort($out, $entry->getNumericId());
+				CommonTypes::putBool($out, $entry->isComponentBased());
+			}
+		}
+
 		CommonTypes::putString($out, $this->multiplayerCorrelationId);
 		CommonTypes::putBool($out, $this->enableNewInventorySystem);
 		CommonTypes::putString($out, $this->serverSoftwareVersion);
@@ -222,10 +263,17 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		CommonTypes::putUUID($out, $this->worldTemplateId);
 		CommonTypes::putBool($out, $this->enableClientSideChunkGeneration);
 		CommonTypes::putBool($out, $this->blockNetworkIdsAreHashes);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100 && $protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
+			CommonTypes::putBool($out, $this->enableTickDeathSystems);
+		}
 		$this->networkPermissions->encode($out);
-		CommonTypes::putBool($out, $this->isLoggingChat);
-		CommonTypes::writeOptional($out, $this->serverJoinInformation, fn(ByteBufferWriter $out, ServerJoinInformation $info) => $info->write($out));
-		$this->serverTelemetryData->write($out);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+				CommonTypes::putBool($out, $this->isLoggingChat);
+			}
+			CommonTypes::writeOptional($out, $this->serverJoinInformation, fn(ByteBufferWriter $out, ServerJoinInformation $info) => $info->write($out, $protocolId));
+			$this->serverTelemetryData->write($out);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

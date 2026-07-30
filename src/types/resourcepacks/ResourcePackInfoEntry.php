@@ -17,7 +17,9 @@ namespace pocketmine\network\mcpe\protocol\types\resourcepacks;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 class ResourcePackInfoEntry{
@@ -68,30 +70,46 @@ class ResourcePackInfoEntry{
 
 	public function getCdnUrl() : string{ return $this->cdnUrl; }
 
-	public function write(ByteBufferWriter $out) : void{
-		CommonTypes::putUUID($out, $this->packId);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			CommonTypes::putUUID($out, $this->packId);
+		}else{
+			CommonTypes::putString($out, $this->packId->toString());
+		}
 		CommonTypes::putString($out, $this->version);
 		LE::writeUnsignedLong($out, $this->sizeBytes);
 		CommonTypes::putString($out, $this->encryptionKey);
 		CommonTypes::putString($out, $this->subPackName);
 		CommonTypes::putString($out, $this->contentId);
 		CommonTypes::putBool($out, $this->hasScripts);
-		CommonTypes::putBool($out, $this->isAddonPack);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			CommonTypes::putBool($out, $this->isAddonPack);
+		}
 		CommonTypes::putBool($out, $this->isRtxCapable);
-		CommonTypes::putString($out, $this->cdnUrl);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			CommonTypes::putString($out, $this->cdnUrl);
+		}
 	}
 
-	public static function read(ByteBufferReader $in) : self{
-		$uuid = CommonTypes::getUUID($in);
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			$uuid = CommonTypes::getUUID($in);
+		}else{
+			$uuid = Uuid::fromString(CommonTypes::getString($in));
+		}
 		$version = CommonTypes::getString($in);
 		$sizeBytes = LE::readUnsignedLong($in);
 		$encryptionKey = CommonTypes::getString($in);
 		$subPackName = CommonTypes::getString($in);
 		$contentId = CommonTypes::getString($in);
 		$hasScripts = CommonTypes::getBool($in);
-		$isAddonPack = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$isAddonPack = CommonTypes::getBool($in);
+		}
 		$rtxCapable = CommonTypes::getBool($in);
-		$cdnUrl = CommonTypes::getString($in);
-		return new self($uuid, $version, $sizeBytes, $encryptionKey, $subPackName, $contentId, $hasScripts, $isAddonPack, $rtxCapable, $cdnUrl);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			$cdnUrl = CommonTypes::getString($in);
+		}
+		return new self($uuid, $version, $sizeBytes, $encryptionKey, $subPackName, $contentId, $hasScripts, $isAddonPack ?? false, $rtxCapable, $cdnUrl ?? "");
 	}
 }

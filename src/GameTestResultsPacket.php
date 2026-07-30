@@ -42,13 +42,13 @@ class GameTestResultsPacket extends DataPacket implements ClientboundPacket{
 
 	public function getTestName() : string{ return $this->testName; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->success = CommonTypes::getBool($in);
 		$this->error = CommonTypes::getString($in);
 		$this->testName = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->success);
 		CommonTypes::putString($out, $this->error);
 		CommonTypes::putString($out, $this->testName);

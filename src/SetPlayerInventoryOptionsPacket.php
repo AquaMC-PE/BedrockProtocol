@@ -54,7 +54,7 @@ class SetPlayerInventoryOptionsPacket extends DataPacket implements ClientboundP
 
 	public function getCraftingLayout() : InventoryLayout{ return $this->craftingLayout; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->leftTab = InventoryLeftTab::fromPacket(VarInt::readSignedInt($in));
 		$this->rightTab = InventoryRightTab::fromPacket(VarInt::readSignedInt($in));
 		$this->filtering = CommonTypes::getBool($in);
@@ -62,7 +62,7 @@ class SetPlayerInventoryOptionsPacket extends DataPacket implements ClientboundP
 		$this->craftingLayout = InventoryLayout::fromPacket(VarInt::readSignedInt($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->leftTab->value);
 		VarInt::writeSignedInt($out, $this->rightTab->value);
 		CommonTypes::putBool($out, $this->filtering);

@@ -17,9 +17,11 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\biome\BiomeDefinitionData;
 use pocketmine\network\mcpe\protocol\types\biome\BiomeDefinitionEntry;
+use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use function array_map;
 use function count;
 
@@ -30,12 +32,15 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 	 * @var BiomeDefinitionData[]
 	 * @phpstan-var list<BiomeDefinitionData>
 	 */
-	private array $definitionData = [];
+	private ?array $definitionData;
 	/**
 	 * @var string[]
 	 * @phpstan-var list<string>
 	 */
-	private array $strings = [];
+	private ?array $strings = [];
+
+	/** @phpstan-var CacheableNbt<CompoundTag> */
+	private ?CacheableNbt $legacyDefinitions;
 
 	/**
 	 * @generate-create-func
@@ -43,12 +48,31 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 	 * @param string[]              $strings
 	 * @phpstan-param list<BiomeDefinitionData> $definitionData
 	 * @phpstan-param list<string>              $strings
+	 * @phpstan-param CacheableNbt<CompoundTag> $legacyDefinitions
 	 */
-	public static function create(array $definitionData, array $strings) : self{
+	private static function internalCreate(?array $definitionData, ?array $strings, ?CacheableNbt $legacyDefinitions) : self{
 		$result = new self;
 		$result->definitionData = $definitionData;
 		$result->strings = $strings;
+		$result->legacyDefinitions = $legacyDefinitions;
 		return $result;
+	}
+
+	/**
+	 * @param BiomeDefinitionData[] $definitionData
+	 * @param string[] 				$strings
+	 * @phpstan-param list<BiomeDefinitionData> $definitionData
+	 * @phpstan-param list<string>            	$strings
+	 */
+	public static function create(array $definitionData, array $strings) : self{
+		return self::internalCreate($definitionData, $strings,null);
+	}
+
+	/**
+	 * @phpstan-param CacheableNbt<CompoundTag> $definitions
+	 */
+	public static function createLegacy(CacheableNbt $definitions) : self{
+		return self::internalCreate(null, null, $definitions);
 	}
 
 	/**
@@ -76,6 +100,10 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 			$entry->getId(),
 			$entry->getTemperature(),
 			$entry->getDownfall(),
+			$entry->getRedSporeDensity(),
+			$entry->getBlueSporeDensity(),
+			$entry->getAshDensity(),
+			$entry->getWhiteAshDensity(),
 			$entry->getFoliageSnow(),
 			$entry->getDepth(),
 			$entry->getScale(),
@@ -109,6 +137,10 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 			$data->getId(),
 			$data->getTemperature(),
 			$data->getDownfall(),
+			$data->getRedSporeDensity(),
+			$data->getBlueSporeDensity(),
+			$data->getAshDensity(),
+			$data->getWhiteAshDensity(),
 			$data->getFoliageSnow(),
 			$data->getDepth(),
 			$data->getScale(),
@@ -116,24 +148,38 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 			$data->hasRain(),
 			($tagIndexes = $data->getTagIndexes()) === null ? null : array_map($this->locateString(...), $tagIndexes),
 			$data->getChunkGenData(),
-		), $this->definitionData);
+		), $this->definitionData ?? throw new PacketDecodeException("No definition data available"));
 	}
 
 	/**
-	 * @return BiomeDefinitionData[]
-	 * @phpstan-return list<BiomeDefinitionData>
+	 * @return BiomeDefinitionData[]|null
+	 * @phpstan-return list<BiomeDefinitionData>|null
 	 */
-	public function getDefinitionData() : array{ return $this->definitionData; }
+	public function getDefinitionData() : ?array{ return $this->definitionData; }
 
 	/**
-	 * @return string[]
-	 * @phpstan-return list<string>
+	 * @return string[]|null
+	 * @phpstan-return list<string>|null
 	 */
-	public function getStrings() : array{ return $this->strings; }
+	public function getStrings() : ?array{ return $this->strings; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	/**
+	 * @return CacheableNbt<CompoundTag>|null
+	 * @phpstan-return CacheableNbt<CompoundTag>|null
+	 */
+	public function getLegacyDefinitions() : ?CacheableNbt{ return $this->legacyDefinitions; }
+
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_80){
+			$this->legacyDefinitions = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
+			$this->definitionData = null;
+			$this->strings = null;
+			return;
+		}
+
+		$this->legacyDefinitions = null;
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
-			$this->definitionData[] = BiomeDefinitionData::read($in);
+			$this->definitionData[] = BiomeDefinitionData::read($in, $protocolId);
 		}
 
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
@@ -141,10 +187,22 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_80){
+			if($this->legacyDefinitions === null){
+				throw new \LogicException("Legacy definitions not set");
+			}
+			$out->writeByteArray($this->legacyDefinitions->getEncodedNbt());
+			return;
+		}
+
+		if($this->definitionData === null || $this->strings === null){
+			throw new \LogicException("Definition data not set");
+		}
+
 		VarInt::writeUnsignedInt($out, count($this->definitionData));
 		foreach($this->definitionData as $data){
-			$data->write($out);
+			$data->write($out, $protocolId);
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->strings));

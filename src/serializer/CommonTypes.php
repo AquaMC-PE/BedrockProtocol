@@ -26,6 +26,7 @@ use pocketmine\nbt\NbtDataException;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\TreeRoot;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\types\BoolGameRule;
 use pocketmine\network\mcpe\protocol\types\command\CommandOriginData;
@@ -59,6 +60,7 @@ use pocketmine\network\mcpe\protocol\types\skin\SkinData;
 use pocketmine\network\mcpe\protocol\types\skin\SkinImage;
 use pocketmine\network\mcpe\protocol\types\StructureEditorData;
 use pocketmine\network\mcpe\protocol\types\StructureSettings;
+use pocketmine\utils\Binary;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use function count;
@@ -470,9 +472,9 @@ final class CommonTypes{
 	 *
 	 * @throws DataDecodeException
 	 */
-	public static function getBlockPosition(ByteBufferReader $in) : BlockPosition{
+	public static function getBlockPosition(ByteBufferReader $in, bool $signedY = true) : BlockPosition{
 		$x = VarInt::readSignedInt($in);
-		$y = VarInt::readSignedInt($in);
+		$y = $signedY ? VarInt::readSignedInt($in) : Binary::signInt(VarInt::readUnsignedInt($in));
 		$z = VarInt::readSignedInt($in);
 		return new BlockPosition($x, $y, $z);
 	}
@@ -480,9 +482,13 @@ final class CommonTypes{
 	/**
 	 * Writes a block position
 	 */
-	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition) : void{
+	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition, bool $signedY = true) : void{
 		VarInt::writeSignedInt($out, $blockPosition->getX());
-		VarInt::writeSignedInt($out, $blockPosition->getY());
+		if($signedY){
+			VarInt::writeSignedInt($out, $blockPosition->getY());
+		}else{
+			VarInt::writeUnsignedInt($out, Binary::unsignInt($blockPosition->getY()));
+		}
 		VarInt::writeSignedInt($out, $blockPosition->getZ());
 	}
 
@@ -554,11 +560,11 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	private static function readGameRule(ByteBufferReader $in, int $type, bool $isPlayerModifiable, bool $isStartGame) : GameRule{
+	private static function readGameRule(ByteBufferReader $in, int $protocolId, int $type, bool $isPlayerModifiable, bool $isStartGame) : GameRule{
 		return match($type){
-			BoolGameRule::ID => BoolGameRule::decode($in, $isPlayerModifiable),
-			IntGameRule::ID => IntGameRule::decode($in, $isPlayerModifiable, $isStartGame),
-			FloatGameRule::ID => FloatGameRule::decode($in, $isPlayerModifiable),
+			BoolGameRule::ID => BoolGameRule::decode($in, $protocolId, $isPlayerModifiable),
+			IntGameRule::ID => IntGameRule::decode($in, $protocolId, $isPlayerModifiable, $isStartGame),
+			FloatGameRule::ID => FloatGameRule::decode($in, $protocolId, $isPlayerModifiable),
 			default => throw new PacketDecodeException("Unknown gamerule type $type"),
 		};
 	}
@@ -572,14 +578,14 @@ final class CommonTypes{
 	 * @throws PacketDecodeException
 	 * @throws DataDecodeException
 	 */
-	public static function getGameRules(ByteBufferReader $in, bool $isStartGame) : array{
+	public static function getGameRules(ByteBufferReader $in, int $protocolId, bool $isStartGame) : array{
 		$count = VarInt::readUnsignedInt($in);
 		$rules = [];
 		for($i = 0; $i < $count; ++$i){
 			$name = self::getString($in);
 			$isPlayerModifiable = self::getBool($in);
 			$type = VarInt::readUnsignedInt($in);
-			$rules[$name] = self::readGameRule($in, $type, $isPlayerModifiable, $isStartGame);
+			$rules[$name] = self::readGameRule($in, $protocolId, $type, $isPlayerModifiable, $isStartGame);
 		}
 
 		return $rules;
@@ -591,57 +597,73 @@ final class CommonTypes{
 	 * @param GameRule[] $rules
 	 * @phpstan-param array<string, GameRule> $rules
 	 */
-	public static function putGameRules(ByteBufferWriter $out, array $rules, bool $isStartGame) : void{
+	public static function putGameRules(ByteBufferWriter $out, int $protocolId, array $rules, bool $isStartGame) : void{
 		VarInt::writeUnsignedInt($out, count($rules));
 		foreach($rules as $name => $rule){
 			self::putString($out, $name);
 			self::putBool($out, $rule->isPlayerModifiable());
 			VarInt::writeUnsignedInt($out, $rule->getTypeId());
-			$rule->encode($out, $isStartGame);
+			$rule->encode($out, $protocolId, $isStartGame);
 		}
 	}
 
 	/** @throws DataDecodeException */
-	public static function getEntityLink(ByteBufferReader $in) : EntityLink{
+	public static function getEntityLink(ByteBufferReader $in, int $protocolId) : EntityLink{
 		$fromActorUniqueId = self::getActorUniqueId($in);
 		$toActorUniqueId = self::getActorUniqueId($in);
 		$type = Byte::readUnsigned($in);
 		$immediate = self::getBool($in);
 		$causedByRider = self::getBool($in);
-		$vehicleAngularVelocity = LE::readFloat($in);
-		return new EntityLink($fromActorUniqueId, $toActorUniqueId, $type, $immediate, $causedByRider, $vehicleAngularVelocity);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$vehicleAngularVelocity = LE::readFloat($in);
+		}
+		return new EntityLink($fromActorUniqueId, $toActorUniqueId, $type, $immediate, $causedByRider, $vehicleAngularVelocity ?? 0);
 	}
 
-	public static function putEntityLink(ByteBufferWriter $out, EntityLink $link) : void{
+	public static function putEntityLink(ByteBufferWriter $out, int $protocolId, EntityLink $link) : void{
 		self::putActorUniqueId($out, $link->fromActorUniqueId);
 		self::putActorUniqueId($out, $link->toActorUniqueId);
 		Byte::writeUnsigned($out, $link->type);
 		self::putBool($out, $link->immediate);
 		self::putBool($out, $link->causedByRider);
-		LE::writeFloat($out, $link->vehicleAngularVelocity);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			LE::writeFloat($out, $link->vehicleAngularVelocity);
+		}
 	}
 
 	/** @throws DataDecodeException */
-	public static function getCommandOriginData(ByteBufferReader $in) : CommandOriginData{
+	public static function getCommandOriginData(ByteBufferReader $in, int $protocolId) : CommandOriginData{
 		$result = new CommandOriginData();
 
-		$result->type = CommonTypes::getString($in);
+		$result->type = $protocolId >= ProtocolInfo::PROTOCOL_1_21_130 ? CommonTypes::getString($in) : CommandOriginData::getTypeFromId(VarInt::readUnsignedInt($in));
 		$result->uuid = self::getUUID($in);
 		$result->requestId = self::getString($in);
-		$result->playerActorUniqueId = LE::readSignedLong($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$result->playerActorUniqueId = LE::readSignedLong($in);
+		}elseif($result->type === CommandOriginData::ORIGIN_DEV_CONSOLE or $result->type === CommandOriginData::ORIGIN_TEST){
+			$result->playerActorUniqueId = VarInt::readSignedLong($in);
+		}
 
 		return $result;
 	}
 
-	public static function putCommandOriginData(ByteBufferWriter $out, CommandOriginData $data) : void{
-		self::putString($out, $data->type);
+	public static function putCommandOriginData(ByteBufferWriter $out, CommandOriginData $data, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			self::putString($out, $data->type);
+		}else{
+			VarInt::writeUnsignedInt($out, CommandOriginData::getIdFromType($data->type));
+		}
 		self::putUUID($out, $data->uuid);
 		self::putString($out, $data->requestId);
-		LE::writeSignedLong($out, $data->playerActorUniqueId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			LE::writeSignedLong($out, $data->playerActorUniqueId);
+		}elseif($data->type === CommandOriginData::ORIGIN_DEV_CONSOLE or $data->type === CommandOriginData::ORIGIN_TEST){
+			VarInt::writeSignedLong($out, $data->playerActorUniqueId);
+		}
 	}
 
 	/** @throws DataDecodeException */
-	public static function getStructureSettings(ByteBufferReader $in) : StructureSettings{
+	public static function getStructureSettings(ByteBufferReader $in, int $protocolId) : StructureSettings{
 		$result = new StructureSettings();
 
 		$result->paletteName = self::getString($in);
@@ -650,8 +672,8 @@ final class CommonTypes{
 		$result->ignoreBlocks = self::getBool($in);
 		$result->allowNonTickingChunks = self::getBool($in);
 
-		$result->dimensions = self::getBlockPosition($in);
-		$result->offset = self::getBlockPosition($in);
+		$result->dimensions = self::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		$result->offset = self::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 
 		$result->lastTouchedByPlayerID = self::getActorUniqueId($in);
 		$result->rotation = Byte::readUnsigned($in);
@@ -665,15 +687,15 @@ final class CommonTypes{
 		return $result;
 	}
 
-	public static function putStructureSettings(ByteBufferWriter $out, StructureSettings $structureSettings) : void{
+	public static function putStructureSettings(ByteBufferWriter $out, StructureSettings $structureSettings, int $protocolId) : void{
 		self::putString($out, $structureSettings->paletteName);
 
 		self::putBool($out, $structureSettings->ignoreEntities);
 		self::putBool($out, $structureSettings->ignoreBlocks);
 		self::putBool($out, $structureSettings->allowNonTickingChunks);
 
-		self::putBlockPosition($out, $structureSettings->dimensions);
-		self::putBlockPosition($out, $structureSettings->offset);
+		self::putBlockPosition($out, $structureSettings->dimensions, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		self::putBlockPosition($out, $structureSettings->offset, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 
 		self::putActorUniqueId($out, $structureSettings->lastTouchedByPlayerID);
 		Byte::writeUnsigned($out, $structureSettings->rotation);
@@ -686,33 +708,37 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getStructureEditorData(ByteBufferReader $in) : StructureEditorData{
+	public static function getStructureEditorData(ByteBufferReader $in, int $protocolId) : StructureEditorData{
 		$result = new StructureEditorData();
 
 		$result->structureName = self::getString($in);
-		$result->filteredStructureName = self::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			$result->filteredStructureName = self::getString($in);
+		}
 		$result->structureDataField = self::getString($in);
 
 		$result->includePlayers = self::getBool($in);
 		$result->showBoundingBox = self::getBool($in);
 
 		$result->structureBlockType = VarInt::readSignedInt($in);
-		$result->structureSettings = self::getStructureSettings($in);
+		$result->structureSettings = self::getStructureSettings($in, $protocolId);
 		$result->structureRedstoneSaveMode = VarInt::readSignedInt($in);
 
 		return $result;
 	}
 
-	public static function putStructureEditorData(ByteBufferWriter $out, StructureEditorData $structureEditorData) : void{
+	public static function putStructureEditorData(ByteBufferWriter $out, int $protocolId, StructureEditorData $structureEditorData) : void{
 		self::putString($out, $structureEditorData->structureName);
-		self::putString($out, $structureEditorData->filteredStructureName);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			self::putString($out, $structureEditorData->filteredStructureName);
+		}
 		self::putString($out, $structureEditorData->structureDataField);
 
 		self::putBool($out, $structureEditorData->includePlayers);
 		self::putBool($out, $structureEditorData->showBoundingBox);
 
 		VarInt::writeSignedInt($out, $structureEditorData->structureBlockType);
-		self::putStructureSettings($out, $structureEditorData->structureSettings);
+		self::putStructureSettings($out, $structureEditorData->structureSettings, $protocolId);
 		VarInt::writeSignedInt($out, $structureEditorData->structureRedstoneSaveMode);
 	}
 
@@ -808,7 +834,7 @@ final class CommonTypes{
 
 	/**
 	 * @phpstan-template T
-	 * @phpstan-param \Closure(ByteBufferReader) : T $reader
+	 * @phpstan-param \Closure(ByteBufferReader) : (T|null) $reader
 	 * @phpstan-return T|null
 	 * @throws DataDecodeException
 	 */

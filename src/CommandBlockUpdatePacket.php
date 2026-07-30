@@ -41,11 +41,11 @@ class CommandBlockUpdatePacket extends DataPacket implements ServerboundPacket{
 	public int $tickDelay;
 	public bool $executeOnFirstTick;
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->isBlock = CommonTypes::getBool($in);
 
 		if($this->isBlock){
-			$this->blockPosition = CommonTypes::getBlockPosition($in);
+			$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 			$this->commandBlockMode = VarInt::readUnsignedInt($in);
 			$this->isRedstoneMode = CommonTypes::getBool($in);
 			$this->isConditional = CommonTypes::getBool($in);
@@ -57,17 +57,19 @@ class CommandBlockUpdatePacket extends DataPacket implements ServerboundPacket{
 		$this->command = CommonTypes::getString($in);
 		$this->lastOutput = CommonTypes::getString($in);
 		$this->name = CommonTypes::getString($in);
-		$this->filteredName = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			$this->filteredName = CommonTypes::getString($in);
+		}
 		$this->shouldTrackOutput = CommonTypes::getBool($in);
 		$this->tickDelay = LE::readUnsignedInt($in);
 		$this->executeOnFirstTick = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->isBlock);
 
 		if($this->isBlock){
-			CommonTypes::putBlockPosition($out, $this->blockPosition);
+			CommonTypes::putBlockPosition($out, $this->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 			VarInt::writeUnsignedInt($out, $this->commandBlockMode);
 			CommonTypes::putBool($out, $this->isRedstoneMode);
 			CommonTypes::putBool($out, $this->isConditional);
@@ -78,7 +80,9 @@ class CommandBlockUpdatePacket extends DataPacket implements ServerboundPacket{
 		CommonTypes::putString($out, $this->command);
 		CommonTypes::putString($out, $this->lastOutput);
 		CommonTypes::putString($out, $this->name);
-		CommonTypes::putString($out, $this->filteredName);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			CommonTypes::putString($out, $this->filteredName);
+		}
 		CommonTypes::putBool($out, $this->shouldTrackOutput);
 		LE::writeUnsignedInt($out, $this->tickDelay);
 		CommonTypes::putBool($out, $this->executeOnFirstTick);

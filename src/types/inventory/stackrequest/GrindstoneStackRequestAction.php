@@ -18,6 +18,7 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
@@ -42,17 +43,21 @@ final class GrindstoneStackRequestAction extends ItemStackRequestAction{
 
 	public function getRepetitions() : int{ return $this->repetitions; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::readRecipeNetId($in);
 		$repairCost = VarInt::readSignedInt($in); //WHY!!!!
-		$repetitions = Byte::readUnsigned($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$repetitions = Byte::readUnsigned($in);
+		}
 
-		return new self($recipeId, $repairCost, $repetitions);
+		return new self($recipeId, $repairCost, $repetitions ?? 0);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeRecipeNetId($out, $this->recipeId);
 		VarInt::writeSignedInt($out, $this->repairCost);
-		Byte::writeUnsigned($out, $this->repetitions);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			Byte::writeUnsigned($out, $this->repetitions);
+		}
 	}
 }

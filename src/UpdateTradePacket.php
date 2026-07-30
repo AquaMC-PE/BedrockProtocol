@@ -67,7 +67,7 @@ class UpdateTradePacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->windowId = Byte::readUnsigned($in);
 		$this->windowType = Byte::readUnsigned($in);
 		$this->windowSlotCount = VarInt::readSignedInt($in);
@@ -80,7 +80,7 @@ class UpdateTradePacket extends DataPacket implements ClientboundPacket{
 		$this->offers = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->windowId);
 		Byte::writeUnsigned($out, $this->windowType);
 		VarInt::writeSignedInt($out, $this->windowSlotCount);

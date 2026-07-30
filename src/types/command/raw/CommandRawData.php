@@ -14,11 +14,14 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\command\raw;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use pocketmine\network\mcpe\protocol\types\command\CommandPermissions;
 use function count;
 
 final class CommandRawData{
@@ -61,21 +64,23 @@ final class CommandRawData{
 	 */
 	public function getOverloads() : array{ return $this->overloads; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
 		$description = CommonTypes::getString($in);
 		$flags = LE::readUnsignedShort($in);
-		$permission = CommonTypes::getString($in);
+		$permission = $protocolId >= ProtocolInfo::PROTOCOL_1_21_130 ? CommonTypes::getString($in) : CommandPermissions::toName(Byte::readUnsigned($in));
 		$aliasEnumIndex = LE::readSignedInt($in); //may be -1 for not set
 
 		$chainedSubCommandDataIndexes = [];
-		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$chainedSubCommandDataIndexes[] = LE::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
+				$chainedSubCommandDataIndexes[] = $protocolId >= ProtocolInfo::PROTOCOL_1_21_130 ? LE::readUnsignedInt($in) : LE::readUnsignedShort($in);
+			}
 		}
 
 		$overloads = [];
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$overloads[] = CommandOverloadRawData::read($in);
+			$overloads[] = CommandOverloadRawData::read($in, $protocolId);
 		}
 
 		return new self(
@@ -89,21 +94,31 @@ final class CommandRawData{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 		CommonTypes::putString($out, $this->description);
 		LE::writeUnsignedShort($out, $this->flags);
-		CommonTypes::putString($out, $this->permission);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::putString($out, $this->permission);
+		}else{
+			Byte::writeUnsigned($out, CommandPermissions::fromName($this->permission));
+		}
 		LE::writeSignedInt($out, $this->aliasEnumIndex);
 
-		VarInt::writeUnsignedInt($out, count($this->chainedSubCommandDataIndexes));
-		foreach($this->chainedSubCommandDataIndexes as $index){
-			LE::writeUnsignedInt($out, $index);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			VarInt::writeUnsignedInt($out, count($this->chainedSubCommandDataIndexes));
+			foreach($this->chainedSubCommandDataIndexes as $index){
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+					LE::writeUnsignedInt($out, $index);
+				}else{
+					LE::writeUnsignedShort($out, $index);
+				}
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->overloads));
 		foreach($this->overloads as $overload){
-			$overload->write($out);
+			$overload->write($out, $protocolId);
 		}
 	}
 }

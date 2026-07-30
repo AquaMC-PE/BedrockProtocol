@@ -16,7 +16,9 @@ namespace pocketmine\network\mcpe\protocol\types;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 final class GatheringJoinInfo{
@@ -48,15 +50,17 @@ final class GatheringJoinInfo{
 
 	public function getServerId() : string{ return $this->serverId; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$experienceId = CommonTypes::getUUID($in);
 		$experienceName = CommonTypes::getString($in);
 		$experienceWorldId = CommonTypes::getUUID($in);
 		$experienceWorldName = CommonTypes::getString($in);
 		$creatorId = CommonTypes::getString($in);
-		$targetId = CommonTypes::getUUID($in);
-		$scenarioId = CommonTypes::getString($in);
-		$serverId = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			$targetId = CommonTypes::getUUID($in);
+			$scenarioId = CommonTypes::getString($in);
+			$serverId = CommonTypes::getString($in);
+		}
 
 		return new self(
 			$experienceId,
@@ -64,20 +68,22 @@ final class GatheringJoinInfo{
 			$experienceWorldId,
 			$experienceWorldName,
 			$creatorId,
-			$targetId,
-			$scenarioId,
-			$serverId,
+			$targetId ?? Uuid::uuid4(),
+			$scenarioId ?? "",
+			$serverId ?? "",
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putUUID($out, $this->experienceId);
 		CommonTypes::putString($out, $this->experienceName);
 		CommonTypes::putUUID($out, $this->experienceWorldId);
 		CommonTypes::putString($out, $this->experienceWorldName);
 		CommonTypes::putString($out, $this->creatorId);
-		CommonTypes::putUUID($out, $this->targetId);
-		CommonTypes::putString($out, $this->scenarioId);
-		CommonTypes::putString($out, $this->serverId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			CommonTypes::putUUID($out, $this->targetId);
+			CommonTypes::putString($out, $this->scenarioId);
+			CommonTypes::putString($out, $this->serverId);
+		}
 	}
 }

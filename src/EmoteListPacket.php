@@ -44,7 +44,7 @@ class EmoteListPacket extends DataPacket implements ClientboundPacket, Serverbou
 	/** @return UuidInterface[] */
 	public function getEmoteIds() : array{ return $this->emoteIds; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->playerActorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->emoteIds = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
@@ -52,7 +52,7 @@ class EmoteListPacket extends DataPacket implements ClientboundPacket, Serverbou
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->playerActorRuntimeId);
 		VarInt::writeUnsignedInt($out, count($this->emoteIds));
 		foreach($this->emoteIds as $emoteId){

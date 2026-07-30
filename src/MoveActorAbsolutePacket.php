@@ -49,7 +49,7 @@ class MoveActorAbsolutePacket extends DataPacket implements ClientboundPacket, S
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->flags = Byte::readUnsigned($in);
 		$this->position = CommonTypes::getVector3($in);
@@ -58,7 +58,7 @@ class MoveActorAbsolutePacket extends DataPacket implements ClientboundPacket, S
 		$this->headYaw = CommonTypes::getRotationByte($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		Byte::writeUnsigned($out, $this->flags);
 		CommonTypes::putVector3($out, $this->position);

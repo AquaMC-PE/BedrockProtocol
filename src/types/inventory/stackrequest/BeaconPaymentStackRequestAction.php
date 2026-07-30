@@ -36,13 +36,13 @@ final class BeaconPaymentStackRequestAction extends ItemStackRequestAction{
 
 	public function getSecondaryEffectId() : int{ return $this->secondaryEffectId; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$primary = VarInt::readSignedInt($in);
 		$secondary = VarInt::readSignedInt($in);
 		return new self($primary, $secondary);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->primaryEffectId);
 		VarInt::writeSignedInt($out, $this->secondaryEffectId);
 	}

@@ -59,22 +59,30 @@ class CameraAimAssistPacket extends DataPacket implements ClientboundPacket{
 
 	public function getShowDebugRender() : bool{ return $this->showDebugRender; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->presetId = CommonTypes::getString($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			$this->presetId = CommonTypes::getString($in);
+		}
 		$this->viewAngle = CommonTypes::getVector2($in);
 		$this->distance = LE::readFloat($in);
 		$this->targetMode = CameraAimAssistTargetMode::fromPacket(Byte::readUnsigned($in));
 		$this->actionType = CameraAimAssistActionType::fromPacket(Byte::readUnsigned($in));
-		$this->showDebugRender = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+			$this->showDebugRender = CommonTypes::getBool($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		CommonTypes::putString($out, $this->presetId);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			CommonTypes::putString($out, $this->presetId);
+		}
 		CommonTypes::putVector2($out, $this->viewAngle);
 		LE::writeFloat($out, $this->distance);
 		Byte::writeUnsigned($out, $this->targetMode->value);
 		Byte::writeUnsigned($out, $this->actionType->value);
-		CommonTypes::putBool($out, $this->showDebugRender);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+			CommonTypes::putBool($out, $this->showDebugRender);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

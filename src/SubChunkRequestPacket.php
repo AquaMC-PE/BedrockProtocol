@@ -16,6 +16,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\SubChunkPosition;
 use pocketmine\network\mcpe\protocol\types\SubChunkPositionOffset;
@@ -55,26 +56,40 @@ class SubChunkRequestPacket extends DataPacket implements ServerboundPacket{
 	 */
 	public function getEntries() : array{ return $this->entries; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->dimension = VarInt::readSignedInt($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->basePosition = SubChunkPosition::readVarInts($in);
+		}
 
 		$this->entries = [];
-		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
+		for($i = 0, $count = $protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in); $i < $count; $i++){
 			$this->entries[] = SubChunkPositionOffset::read($in);
 		}
 
-		$this->basePosition = SubChunkPosition::readFixedInts($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->basePosition = SubChunkPosition::readFixedInts($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->dimension);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->basePosition->writeVarInts($out);
+		}
 
-		VarInt::writeUnsignedInt($out, count($this->entries));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			LE::writeUnsignedInt($out, count($this->entries));
+		}else{
+			VarInt::writeUnsignedInt($out, count($this->entries));
+		}
 		foreach($this->entries as $entry){
 			$entry->write($out);
 		}
 
-		$this->basePosition->writeFixedInts($out);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->basePosition->writeFixedInts($out);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

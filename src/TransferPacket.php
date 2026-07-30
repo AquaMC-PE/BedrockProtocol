@@ -37,16 +37,20 @@ class TransferPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->address = CommonTypes::getString($in);
 		$this->port = LE::readUnsignedShort($in);
-		$this->reloadWorld = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->reloadWorld = CommonTypes::getBool($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->address);
 		LE::writeUnsignedShort($out, $this->port);
-		CommonTypes::putBool($out, $this->reloadWorld);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			CommonTypes::putBool($out, $this->reloadWorld);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

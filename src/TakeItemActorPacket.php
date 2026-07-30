@@ -34,12 +34,12 @@ class TakeItemActorPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->itemActorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->takerActorRuntimeId = CommonTypes::getActorRuntimeId($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->itemActorRuntimeId);
 		CommonTypes::putActorRuntimeId($out, $this->takerActorRuntimeId);
 	}

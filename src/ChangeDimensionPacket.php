@@ -43,18 +43,22 @@ class ChangeDimensionPacket extends DataPacket implements ClientboundPacket{
 
 	public function getLoadingScreenId() : ?int{ return $this->loadingScreenId; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->dimension = VarInt::readSignedInt($in);
 		$this->position = CommonTypes::getVector3($in);
 		$this->respawn = CommonTypes::getBool($in);
-		$this->loadingScreenId = CommonTypes::readOptional($in, LE::readUnsignedInt(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->loadingScreenId = CommonTypes::readOptional($in, LE::readUnsignedInt(...));
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->dimension);
 		CommonTypes::putVector3($out, $this->position);
 		CommonTypes::putBool($out, $this->respawn);
-		CommonTypes::writeOptional($out, $this->loadingScreenId, LE::writeUnsignedInt(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			CommonTypes::writeOptional($out, $this->loadingScreenId, LE::writeUnsignedInt(...));
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

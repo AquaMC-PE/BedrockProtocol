@@ -98,11 +98,23 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
+	public function handlePassengerJump(PassengerJumpPacket $packet) : bool{
+		return false;
+	}
+
 	public function handleUpdateBlock(UpdateBlockPacket $packet) : bool{
 		return false;
 	}
 
 	public function handleAddPainting(AddPaintingPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleTickSync(TickSyncPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleLevelSoundEventPacketV1(LevelSoundEventPacketV1 $packet) : bool{
 		return false;
 	}
 
@@ -214,11 +226,19 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
+	public function handleCraftingEvent(CraftingEventPacket $packet) : bool{
+		return false;
+	}
+
 	public function handleGuiDataPickItem(GuiDataPickItemPacket $packet) : bool{
 		return false;
 	}
 
 	public function handleBlockActorData(BlockActorDataPacket $packet) : bool{
+		return false;
+	}
+
+	public function handlePlayerInput(PlayerInputPacket $packet) : bool{
 		return false;
 	}
 
@@ -455,6 +475,10 @@ trait PacketHandlerDefaultImplTrait{
 	}
 
 	public function handleAvailableActorIdentifiers(AvailableActorIdentifiersPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleLevelSoundEventPacketV2(LevelSoundEventPacketV2 $packet) : bool{
 		return false;
 	}
 
@@ -750,6 +774,10 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
+	public function handleCompressedBiomeDefinitionList(CompressedBiomeDefinitionListPacket $packet) : bool{
+		return false;
+	}
+
 	public function handleTrimData(TrimDataPacket $packet) : bool{
 		return false;
 	}
@@ -811,6 +839,10 @@ trait PacketHandlerDefaultImplTrait{
 	}
 
 	public function handleMovementEffect(MovementEffectPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleSetMovementAuthority(SetMovementAuthorityPacket $packet) : bool{
 		return false;
 	}
 

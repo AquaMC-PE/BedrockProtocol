@@ -38,12 +38,12 @@ class ScriptMessagePacket extends DataPacket implements ClientboundPacket, Serve
 
 	public function getValue() : string{ return $this->value; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->messageId = CommonTypes::getString($in);
 		$this->value = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->messageId);
 		CommonTypes::putString($out, $this->value);
 	}

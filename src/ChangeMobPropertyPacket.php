@@ -76,7 +76,7 @@ class ChangeMobPropertyPacket extends DataPacket implements ServerboundPacket{
 
 	public function getFloatValue() : float{ return $this->floatValue; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
 		$this->propertyName = CommonTypes::getString($in);
 		$this->boolValue = CommonTypes::getBool($in);
@@ -85,7 +85,7 @@ class ChangeMobPropertyPacket extends DataPacket implements ServerboundPacket{
 		$this->floatValue = LE::readFloat($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
 		CommonTypes::putString($out, $this->propertyName);
 		CommonTypes::putBool($out, $this->boolValue);

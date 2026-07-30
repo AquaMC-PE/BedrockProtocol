@@ -59,7 +59,7 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 		return self::create(self::TYPE_REMOVE, $entries);
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->type = Byte::readUnsigned($in);
 		$count = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $count; ++$i){
@@ -75,8 +75,12 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 				$entry->skinData = CommonTypes::getSkin($in);
 				$entry->isTeacher = CommonTypes::getBool($in);
 				$entry->isHost = CommonTypes::getBool($in);
-				$entry->isSubClient = CommonTypes::getBool($in);
-				$entry->color = Color::fromARGB(LE::readUnsignedInt($in));
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+					$entry->isSubClient = CommonTypes::getBool($in);
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
+						$entry->color = Color::fromARGB(LE::readUnsignedInt($in));
+					}
+				}
 			}else{
 				$entry->uuid = CommonTypes::getUUID($in);
 			}
@@ -90,7 +94,7 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->type);
 		VarInt::writeUnsignedInt($out, count($this->entries));
 		foreach($this->entries as $entry){
@@ -104,8 +108,12 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 				CommonTypes::putSkin($out, $entry->skinData);
 				CommonTypes::putBool($out, $entry->isTeacher);
 				CommonTypes::putBool($out, $entry->isHost);
-				CommonTypes::putBool($out, $entry->isSubClient);
-				LE::writeUnsignedInt($out, ($entry->color ?? new Color(255, 255, 255))->toARGB());
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+					CommonTypes::putBool($out, $entry->isSubClient);
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
+						LE::writeUnsignedInt($out, ($entry->color ?? new Color(255, 255, 255))->toARGB());
+					}
+				}
 			}else{
 				CommonTypes::putUUID($out, $entry->uuid);
 			}

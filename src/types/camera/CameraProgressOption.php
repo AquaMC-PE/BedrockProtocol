@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\camera;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function is_int;
 
@@ -42,21 +43,25 @@ final class CameraProgressOption{
 	 */
 	public function getEaseType() : string{ return $this->easeType; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$value = LE::readFloat($in);
 		$time = LE::readFloat($in);
-		$easeType = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			$easeType = CommonTypes::getString($in);
+		}
 
 		return new self(
 			$value,
 			$time,
-			$easeType
+			$easeType ?? ""
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeFloat($out, $this->value);
 		LE::writeFloat($out, $this->time);
-		CommonTypes::putString($out, $this->easeType);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			CommonTypes::putString($out, $this->easeType);
+		}
 	}
 }

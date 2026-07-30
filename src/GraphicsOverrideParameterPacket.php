@@ -78,28 +78,36 @@ class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundP
 
 	public function isReset() : bool{ return $this->reset; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$count = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $count; ++$i){
 			$this->values[] = ParameterKeyframeValue::read($in);
 		}
-		$this->unknownFloat = CommonTypes::readOptional($in, LE::readFloat(...));
-		$this->unknownVector3 = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			$this->unknownFloat = CommonTypes::readOptional($in, LE::readFloat(...));
+			$this->unknownVector3 = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+		}
 		$this->biomeIdentifier = CommonTypes::getString($in);
-		$this->playerIdentifier = CommonTypes::readOptional($in, CommonTypes::getString(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->playerIdentifier = CommonTypes::readOptional($in, CommonTypes::getString(...));
+		}
 		$this->parameterType = GraphicsOverrideParameterType::fromPacket(Byte::readUnsigned($in));
 		$this->reset = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->values));
 		foreach($this->values as $value){
 			$value->write($out);
 		}
-		CommonTypes::writeOptional($out, $this->unknownFloat, LE::writeFloat(...));
-		CommonTypes::writeOptional($out, $this->unknownVector3, CommonTypes::putVector3(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			CommonTypes::writeOptional($out, $this->unknownFloat, LE::writeFloat(...));
+			CommonTypes::writeOptional($out, $this->unknownVector3, CommonTypes::putVector3(...));
+		}
 		CommonTypes::putString($out, $this->biomeIdentifier);
-		CommonTypes::writeOptional($out, $this->playerIdentifier, CommonTypes::putString(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			CommonTypes::writeOptional($out, $this->playerIdentifier, CommonTypes::putString(...));
+		}
 		Byte::writeUnsigned($out, $this->parameterType->value);
 		CommonTypes::putBool($out, $this->reset);
 	}

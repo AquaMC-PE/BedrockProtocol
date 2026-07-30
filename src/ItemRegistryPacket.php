@@ -49,25 +49,29 @@ class ItemRegistryPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getEntries() : array{ return $this->entries; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->entries = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$stringId = CommonTypes::getString($in);
-			$numericId = LE::readSignedShort($in);
-			$isComponentBased = CommonTypes::getBool($in);
-			$version = VarInt::readSignedInt($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+				$numericId = LE::readSignedShort($in);
+				$isComponentBased = CommonTypes::getBool($in);
+				$version = VarInt::readSignedInt($in);
+			}
 			$nbt = CommonTypes::getNbtCompoundRoot($in);
-			$this->entries[] = new ItemTypeEntry($stringId, $numericId, $isComponentBased, $version, new CacheableNbt($nbt));
+			$this->entries[] = new ItemTypeEntry($stringId, $numericId ?? -1, $isComponentBased ?? false, $version ?? -1, new CacheableNbt($nbt));
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->entries));
 		foreach($this->entries as $entry){
 			CommonTypes::putString($out, $entry->getStringId());
-			LE::writeSignedShort($out, $entry->getNumericId());
-			CommonTypes::putBool($out, $entry->isComponentBased());
-			VarInt::writeSignedInt($out, $entry->getVersion());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+				LE::writeSignedShort($out, $entry->getNumericId());
+				CommonTypes::putBool($out, $entry->isComponentBased());
+				VarInt::writeSignedInt($out, $entry->getVersion());
+			}
 			$out->writeByteArray($entry->getComponentNbt()->getEncodedNbt());
 		}
 	}

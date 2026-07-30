@@ -45,13 +45,17 @@ class EditorNetworkPacket extends DataPacket implements ClientboundPacket, Serve
 
 	public function isRouteToManager() : bool{ return $this->isRouteToManager; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->isRouteToManager = CommonTypes::getBool($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->isRouteToManager = CommonTypes::getBool($in);
+		}
 		$this->payload = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		CommonTypes::putBool($out, $this->isRouteToManager);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			CommonTypes::putBool($out, $this->isRouteToManager);
+		}
 		$out->writeByteArray($this->payload->getEncodedNbt());
 	}
 

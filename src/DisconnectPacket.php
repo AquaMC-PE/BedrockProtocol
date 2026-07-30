@@ -41,19 +41,40 @@ class DisconnectPacket extends DataPacket implements ClientboundPacket, Serverbo
 		return true;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->reason = VarInt::readSignedInt($in);
-		$type = VarInt::readUnsignedInt($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_40){
+			$this->reason = VarInt::readSignedInt($in);
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			$type = VarInt::readUnsignedInt($in);
+		}else{
+			$type = CommonTypes::getBool($in) ? 1 : 0;
+		}
+
 		$this->message = $type === 0 ? CommonTypes::getString($in) : null;
-		$this->filteredMessage = $type === 0 ? CommonTypes::getString($in) : null;
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->filteredMessage = $type === 0 ? CommonTypes::getString($in) : null;
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		VarInt::writeSignedInt($out, $this->reason);
-		VarInt::writeUnsignedInt($out, ($skipMessage = $this->message === null && $this->filteredMessage === null) ? 1 : 0);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_40){
+			VarInt::writeSignedInt($out, $this->reason);
+		}
+
+		$skipMessage = $this->message === null && $this->filteredMessage === null;
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			VarInt::writeUnsignedInt($out, $skipMessage ? 1 : 0);
+		}else{
+			CommonTypes::putBool($out, $skipMessage);
+		}
+
 		if(!$skipMessage){
 			CommonTypes::putString($out, $this->message ?? "");
-			CommonTypes::putString($out, $this->filteredMessage ?? "");
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				CommonTypes::putString($out, $this->filteredMessage ?? "");
+			}
 		}
 	}
 

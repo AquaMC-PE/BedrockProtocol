@@ -38,14 +38,18 @@ class PartyChangedPacket extends DataPacket implements ServerboundPacket{
 
 	public function isPartyLeader() : bool{ return $this->partyLeader; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->partyId = CommonTypes::getString($in);
-		$this->partyLeader = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->partyLeader = CommonTypes::getBool($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->partyId);
-		CommonTypes::putBool($out, $this->partyLeader);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			CommonTypes::putBool($out, $this->partyLeader);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

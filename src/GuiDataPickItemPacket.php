@@ -37,13 +37,13 @@ class GuiDataPickItemPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->itemDescription = CommonTypes::getString($in);
 		$this->itemEffects = CommonTypes::getString($in);
 		$this->hotbarSlot = LE::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->itemDescription);
 		CommonTypes::putString($out, $this->itemEffects);
 		LE::writeSignedInt($out, $this->hotbarSlot);

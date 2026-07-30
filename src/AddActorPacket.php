@@ -89,7 +89,7 @@ class AddActorPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->type = CommonTypes::getString($in);
@@ -114,11 +114,11 @@ class AddActorPacket extends DataPacket implements ClientboundPacket{
 
 		$linkCount = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $linkCount; ++$i){
-			$this->links[] = CommonTypes::getEntityLink($in);
+			$this->links[] = CommonTypes::getEntityLink($in, $protocolId);
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		CommonTypes::putString($out, $this->type);
@@ -142,7 +142,7 @@ class AddActorPacket extends DataPacket implements ClientboundPacket{
 
 		VarInt::writeUnsignedInt($out, count($this->links));
 		foreach($this->links as $link){
-			CommonTypes::putEntityLink($out, $link);
+			CommonTypes::putEntityLink($out, $protocolId, $link);
 		}
 	}
 

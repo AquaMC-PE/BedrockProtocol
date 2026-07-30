@@ -36,12 +36,12 @@ class SpawnExperienceOrbPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->position = CommonTypes::getVector3($in);
 		$this->amount = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putVector3($out, $this->position);
 		VarInt::writeSignedInt($out, $this->amount);
 	}

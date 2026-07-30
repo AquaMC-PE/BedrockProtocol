@@ -46,7 +46,7 @@ class DeathInfoPacket extends DataPacket implements ClientboundPacket{
 	/** @return string[] */
 	public function getMessageParameters() : array{ return $this->messageParameters; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->messageTranslationKey = CommonTypes::getString($in);
 
 		$this->messageParameters = [];
@@ -55,7 +55,7 @@ class DeathInfoPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->messageTranslationKey);
 
 		VarInt::writeUnsignedInt($out, count($this->messageParameters));

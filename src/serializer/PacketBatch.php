@@ -62,7 +62,7 @@ class PacketBatch{
 	 * @phpstan-return \Generator<int, Packet, void, void>
 	 * @throws PacketDecodeException
 	 */
-	final public static function decodePackets(ByteBufferReader $in, PacketPool $packetPool) : \Generator{
+	final public static function decodePackets(ByteBufferReader $in, int $protocolId, PacketPool $packetPool) : \Generator{
 		$c = 0;
 		foreach(self::decodeRaw($in) as $packetBuffer){
 			$packet = $packetPool->getPacket($packetBuffer);
@@ -70,7 +70,7 @@ class PacketBatch{
 				try{
 					//TODO: this could use a view with a start and end offset to avoid extra string allocations
 					//currently ByteBufferReader doesn't support this
-					$packet->decode(new ByteBufferReader($packetBuffer));
+					$packet->decode(new ByteBufferReader($packetBuffer), $protocolId);
 				}catch(PacketDecodeException $e){
 					throw new PacketDecodeException("Error decoding packet $c in batch: " . $e->getMessage(), 0, $e);
 				}
@@ -86,10 +86,10 @@ class PacketBatch{
 	 * @param Packet[]       $packets
 	 * @phpstan-param list<Packet> $packets
 	 */
-	final public static function encodePackets(ByteBufferWriter $out, array $packets) : void{
+	final public static function encodePackets(ByteBufferWriter $out, int $protocolId, array $packets) : void{
 		foreach($packets as $packet){
 			$serializer = new ByteBufferWriter();
-			$packet->encode($serializer);
+			$packet->encode($serializer, $protocolId);
 			//this may require a copy, so don't call it twice
 			$packetBuffer = $serializer->getData();
 			VarInt::writeUnsignedInt($out, strlen($packetBuffer));

@@ -34,11 +34,11 @@ class TickingAreasLoadStatusPacket extends DataPacket implements ClientboundPack
 
 	public function isWaitingForPreload() : bool{ return $this->waitingForPreload; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->waitingForPreload = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->waitingForPreload);
 	}
 

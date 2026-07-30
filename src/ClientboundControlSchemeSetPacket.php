@@ -35,11 +35,11 @@ class ClientboundControlSchemeSetPacket extends DataPacket implements Clientboun
 
 	public function getScheme() : ControlScheme{ return $this->scheme; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->scheme = ControlScheme::fromPacket(Byte::readUnsigned($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->scheme->value);
 	}
 

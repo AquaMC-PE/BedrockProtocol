@@ -77,24 +77,24 @@ class AddVolumeEntityPacket extends DataPacket implements ClientboundPacket{
 
 	public function getEngineVersion() : string{ return $this->engineVersion; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->entityNetId = VarInt::readUnsignedInt($in);
 		$this->data = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 		$this->jsonIdentifier = CommonTypes::getString($in);
 		$this->instanceName = CommonTypes::getString($in);
-		$this->minBound = CommonTypes::getBlockPosition($in);
-		$this->maxBound = CommonTypes::getBlockPosition($in);
+		$this->minBound = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		$this->maxBound = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		$this->dimension = VarInt::readSignedInt($in);
 		$this->engineVersion = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->entityNetId);
 		$out->writeByteArray($this->data->getEncodedNbt());
 		CommonTypes::putString($out, $this->jsonIdentifier);
 		CommonTypes::putString($out, $this->instanceName);
-		CommonTypes::putBlockPosition($out, $this->minBound);
-		CommonTypes::putBlockPosition($out, $this->maxBound);
+		CommonTypes::putBlockPosition($out, $this->minBound, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		CommonTypes::putBlockPosition($out, $this->maxBound, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		VarInt::writeSignedInt($out, $this->dimension);
 		CommonTypes::putString($out, $this->engineVersion);
 	}

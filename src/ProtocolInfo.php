@@ -32,11 +32,71 @@ final class ProtocolInfo{
 	 */
 
 	/** Actual Minecraft: PE protocol version */
-	public const CURRENT_PROTOCOL = 1001;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_30;
+	public const ACCEPTED_PROTOCOL = [
+		self::PROTOCOL_1_20_0,
+		self::PROTOCOL_1_20_10,
+		self::PROTOCOL_1_20_30,
+		self::PROTOCOL_1_20_40,
+		self::PROTOCOL_1_20_50,
+		self::PROTOCOL_1_20_60,
+		self::PROTOCOL_1_20_70,
+		self::PROTOCOL_1_20_80,
+		self::PROTOCOL_1_21_0,
+		self::PROTOCOL_1_21_2,
+		self::PROTOCOL_1_21_20,
+		self::PROTOCOL_1_21_30,
+		self::PROTOCOL_1_21_40,
+		self::PROTOCOL_1_21_50,
+		self::PROTOCOL_1_21_60,
+		self::PROTOCOL_1_21_70,
+		self::PROTOCOL_1_21_80,
+		self::PROTOCOL_1_21_90,
+		self::PROTOCOL_1_21_93,
+		self::PROTOCOL_1_21_100,
+		self::PROTOCOL_1_21_111,
+		self::PROTOCOL_1_21_120,
+		self::PROTOCOL_1_21_124,
+		self::PROTOCOL_1_21_130,
+		self::PROTOCOL_1_26_0,
+		self::PROTOCOL_1_26_10,
+		self::PROTOCOL_1_26_20,
+		self::CURRENT_PROTOCOL,
+	];
+
 	/** Display version shown in the server logs. This should match the version on the game's home screen. */
 	public const MINECRAFT_VERSION = 'v26.30';
 	/** Version sent on the network for client side compatibility checks. This may differ from the display version. */
 	public const MINECRAFT_VERSION_NETWORK = '1.26.30';
+
+	public const PROTOCOL_1_26_30 = 1001;
+	public const PROTOCOL_1_26_20 = 975;
+	public const PROTOCOL_1_26_10 = 944;
+	public const PROTOCOL_1_26_0 = 924;
+	public const PROTOCOL_1_21_130 = 898;
+	public const PROTOCOL_1_21_124 = 860;
+	public const PROTOCOL_1_21_120 = 859;
+	public const PROTOCOL_1_21_111 = 844;
+	public const PROTOCOL_1_21_100 = 827;
+	public const PROTOCOL_1_21_93 = 819;
+	public const PROTOCOL_1_21_90 = 818;
+	public const PROTOCOL_1_21_80 = 800;
+	public const PROTOCOL_1_21_70 = 786;
+	public const PROTOCOL_1_21_60 = 776;
+	public const PROTOCOL_1_21_50 = 766;
+	public const PROTOCOL_1_21_40 = 748;
+	public const PROTOCOL_1_21_30 = 729;
+	public const PROTOCOL_1_21_20 = 712;
+	public const PROTOCOL_1_21_2 = 686;
+	public const PROTOCOL_1_21_0 = 685;
+	public const PROTOCOL_1_20_80 = 671;
+	public const PROTOCOL_1_20_70 = 662;
+	public const PROTOCOL_1_20_60 = 649;
+	public const PROTOCOL_1_20_50 = 630;
+	public const PROTOCOL_1_20_40 = 622;
+	public const PROTOCOL_1_20_30 = 618;
+	public const PROTOCOL_1_20_10 = 594;
+	public const PROTOCOL_1_20_0 = 589;
 
 	public const LOGIN_PACKET = 0x01;
 	public const PLAY_STATUS_PACKET = 0x02;
@@ -57,10 +117,11 @@ final class ProtocolInfo{
 	public const TAKE_ITEM_ACTOR_PACKET = 0x11;
 	public const MOVE_ACTOR_ABSOLUTE_PACKET = 0x12;
 	public const MOVE_PLAYER_PACKET = 0x13;
-
+	public const PASSENGER_JUMP_PACKET = 0x14;
 	public const UPDATE_BLOCK_PACKET = 0x15;
 	public const ADD_PAINTING_PACKET = 0x16;
-
+	public const TICK_SYNC_PACKET = 0x17;
+	public const LEVEL_SOUND_EVENT_PACKET_V1 = 0x18;
 	public const LEVEL_EVENT_PACKET = 0x19;
 	public const BLOCK_EVENT_PACKET = 0x1a;
 	public const ACTOR_EVENT_PACKET = 0x1b;
@@ -89,11 +150,11 @@ final class ProtocolInfo{
 	public const INVENTORY_SLOT_PACKET = 0x32;
 	public const CONTAINER_SET_DATA_PACKET = 0x33;
 	public const CRAFTING_DATA_PACKET = 0x34;
-
+	public const CRAFTING_EVENT_PACKET = 0x35;
 	public const GUI_DATA_PICK_ITEM_PACKET = 0x36;
-
+	public const ADVENTURE_SETTINGS_PACKET = 0x37;
 	public const BLOCK_ACTOR_DATA_PACKET = 0x38;
-
+	public const PLAYER_INPUT_PACKET = 0x39;
 	public const LEVEL_CHUNK_PACKET = 0x3a;
 	public const SET_COMMANDS_ENABLED_PACKET = 0x3b;
 	public const SET_DIFFICULTY_PACKET = 0x3c;
@@ -155,7 +216,7 @@ final class ProtocolInfo{
 
 	public const SPAWN_PARTICLE_EFFECT_PACKET = 0x76;
 	public const AVAILABLE_ACTOR_IDENTIFIERS_PACKET = 0x77;
-
+	public const LEVEL_SOUND_EVENT_PACKET_V2 = 0x78;
 	public const NETWORK_CHUNK_PUBLISHER_UPDATE_PACKET = 0x79;
 	public const BIOME_DEFINITION_LIST_PACKET = 0x7a;
 	public const LEVEL_SOUND_EVENT_PACKET = 0x7b;
@@ -235,7 +296,7 @@ final class ProtocolInfo{
 	public const UNLOCKED_RECIPES_PACKET = 0xc7;
 
 	public const CAMERA_INSTRUCTION_PACKET = 0x12c;
-
+	public const COMPRESSED_BIOME_DEFINITION_LIST_PACKET = 0x12d;
 	public const TRIM_DATA_PACKET = 0x12e;
 	public const OPEN_SIGN_PACKET = 0x12f;
 	public const AGENT_ANIMATION_PACKET = 0x130;
@@ -253,7 +314,7 @@ final class ProtocolInfo{
 	public const CAMERA_AIM_ASSIST_PACKET = 0x13c;
 	public const CONTAINER_REGISTRY_CLEANUP_PACKET = 0x13d;
 	public const MOVEMENT_EFFECT_PACKET = 0x13e;
-
+	public const SET_MOVEMENT_AUTHORITY_PACKET = 0x13f;
 	public const CAMERA_AIM_ASSIST_PRESETS_PACKET = 0x140;
 	public const CLIENT_CAMERA_AIM_ASSIST_PACKET = 0x141;
 	public const CLIENT_MOVEMENT_PREDICTION_SYNC_PACKET = 0x142;

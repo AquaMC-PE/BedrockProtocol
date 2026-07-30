@@ -70,7 +70,7 @@ class NetworkSettingsPacket extends DataPacket implements ClientboundPacket{
 
 	public function getClientThrottleScalar() : float{ return $this->clientThrottleScalar; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->compressionThreshold = LE::readUnsignedShort($in);
 		$this->compressionAlgorithm = LE::readUnsignedShort($in);
 		$this->enableClientThrottling = CommonTypes::getBool($in);
@@ -78,7 +78,7 @@ class NetworkSettingsPacket extends DataPacket implements ClientboundPacket{
 		$this->clientThrottleScalar = LE::readFloat($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeUnsignedShort($out, $this->compressionThreshold);
 		LE::writeUnsignedShort($out, $this->compressionAlgorithm);
 		CommonTypes::putBool($out, $this->enableClientThrottling);

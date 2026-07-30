@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 
 final class AbilitiesLayer{
 
@@ -78,12 +79,12 @@ final class AbilitiesLayer{
 
 	public function getWalkSpeed() : ?float{ return $this->walkSpeed; }
 
-	public static function decode(ByteBufferReader $in) : self{
+	public static function decode(ByteBufferReader $in, int $protocolId) : self{
 		$layerId = LE::readUnsignedShort($in);
 		$setAbilities = LE::readUnsignedInt($in);
 		$setAbilityValues = LE::readUnsignedInt($in);
 		$flySpeed = LE::readFloat($in);
-		$verticalFlySpeed = LE::readFloat($in);
+		$verticalFlySpeed = $protocolId >= ProtocolInfo::PROTOCOL_1_21_60 ? LE::readFloat($in) : 0.0;
 		$walkSpeed = LE::readFloat($in);
 
 		$boolAbilities = [];
@@ -101,7 +102,7 @@ final class AbilitiesLayer{
 			}
 			$flySpeed = null;
 		}
-		if(($setAbilities & (1 << self::ABILITY_VERTICAL_FLY_SPEED)) === 0){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60 && ($setAbilities & (1 << self::ABILITY_VERTICAL_FLY_SPEED)) === 0){
 			if($verticalFlySpeed !== 0.0){
 				throw new PacketDecodeException("Vertical fly speed should be zero if the layer does not set it");
 			}
@@ -117,7 +118,7 @@ final class AbilitiesLayer{
 		return new self($layerId, $boolAbilities, $flySpeed, $verticalFlySpeed, $walkSpeed);
 	}
 
-	public function encode(ByteBufferWriter $out) : void{
+	public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeUnsignedShort($out, $this->layerId);
 
 		$setAbilities = 0;
@@ -129,7 +130,7 @@ final class AbilitiesLayer{
 		if($this->flySpeed !== null){
 			$setAbilities |= (1 << self::ABILITY_FLY_SPEED);
 		}
-		if($this->verticalFlySpeed !== null){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60 && $this->verticalFlySpeed !== null){
 			$setAbilities |= (1 << self::ABILITY_VERTICAL_FLY_SPEED);
 		}
 		if($this->walkSpeed !== null){
@@ -139,7 +140,9 @@ final class AbilitiesLayer{
 		LE::writeUnsignedInt($out, $setAbilities);
 		LE::writeUnsignedInt($out, $setAbilityValues);
 		LE::writeFloat($out, $this->flySpeed ?? 0);
-		LE::writeFloat($out, $this->verticalFlySpeed ?? 0);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			LE::writeFloat($out, $this->verticalFlySpeed ?? 0);
+		}
 		LE::writeFloat($out, $this->walkSpeed ?? 0);
 	}
 }

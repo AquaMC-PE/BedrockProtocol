@@ -79,7 +79,7 @@ class AnimateEntityPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getActorRuntimeIds() : array{ return $this->actorRuntimeIds; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->animation = CommonTypes::getString($in);
 		$this->nextState = CommonTypes::getString($in);
 		$this->stopExpression = CommonTypes::getString($in);
@@ -92,7 +92,7 @@ class AnimateEntityPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->animation);
 		CommonTypes::putString($out, $this->nextState);
 		CommonTypes::putString($out, $this->stopExpression);

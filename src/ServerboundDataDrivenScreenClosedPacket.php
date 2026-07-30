@@ -39,12 +39,12 @@ class ServerboundDataDrivenScreenClosedPacket extends DataPacket implements Serv
 
 	public function getCloseReason() : string{ return $this->closeReason; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->formId = LE::readUnsignedInt($in);
 		$this->closeReason = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeUnsignedInt($out, $this->formId);
 		CommonTypes::putString($out, $this->closeReason);
 	}

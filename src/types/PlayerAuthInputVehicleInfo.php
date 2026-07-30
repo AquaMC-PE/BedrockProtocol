@@ -17,33 +17,38 @@ namespace pocketmine\network\mcpe\protocol\types;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 final class PlayerAuthInputVehicleInfo{
 
 	public function __construct(
-		private float $vehicleRotationX,
-		private float $vehicleRotationZ,
+		private ?float $vehicleRotationX,
+		private ?float $vehicleRotationZ,
 		private int $predictedVehicleActorUniqueId
 	){}
 
-	public function getVehicleRotationX() : float{ return $this->vehicleRotationX; }
+	public function getVehicleRotationX() : ?float{ return $this->vehicleRotationX; }
 
-	public function getVehicleRotationZ() : float{ return $this->vehicleRotationZ; }
+	public function getVehicleRotationZ() : ?float{ return $this->vehicleRotationZ; }
 
 	public function getPredictedVehicleActorUniqueId() : int{ return $this->predictedVehicleActorUniqueId; }
 
-	public static function read(ByteBufferReader $in) : self{
-		$vehicleRotationX = LE::readFloat($in);
-		$vehicleRotationZ = LE::readFloat($in);
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			$vehicleRotationX = LE::readFloat($in);
+			$vehicleRotationZ = LE::readFloat($in);
+		}
 		$predictedVehicleActorUniqueId = CommonTypes::getActorUniqueId($in);
 
-		return new self($vehicleRotationX, $vehicleRotationZ, $predictedVehicleActorUniqueId);
+		return new self($vehicleRotationX ?? null, $vehicleRotationZ ?? null, $predictedVehicleActorUniqueId);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
-		LE::writeFloat($out, $this->vehicleRotationX);
-		LE::writeFloat($out, $this->vehicleRotationZ);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			LE::writeFloat($out, $this->vehicleRotationX ?? throw new \InvalidArgumentException("vehicleRotationX must be set for 1.20.70+"));
+			LE::writeFloat($out, $this->vehicleRotationZ ?? throw new \InvalidArgumentException("vehicleRotationZ must be set for 1.20.70+"));
+		}
 		CommonTypes::putActorUniqueId($out, $this->predictedVehicleActorUniqueId);
 	}
 }

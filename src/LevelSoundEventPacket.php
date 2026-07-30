@@ -64,26 +64,42 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 		return self::create($sound, $position, $extraData, ":", false, $disableRelativeVolume, -1, null);
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->sound = CommonTypes::getString($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->sound = CommonTypes::getString($in);
+		}else{
+			$this->sound = LevelSoundEvent::toString(VarInt::readUnsignedInt($in));
+		}
 		$this->position = CommonTypes::getVector3($in);
 		$this->extraData = VarInt::readSignedInt($in);
 		$this->entityType = CommonTypes::getString($in);
 		$this->isBabyMob = CommonTypes::getBool($in);
 		$this->disableRelativeVolume = CommonTypes::getBool($in);
-		$this->actorUniqueId = LE::readSignedLong($in); //WHY IS THIS NON-STANDARD?
-		$this->firePosition = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+			$this->actorUniqueId = LE::readSignedLong($in); //WHY IS THIS NON-STANDARD?
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+				$this->firePosition = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+			}
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		CommonTypes::putString($out, $this->sound);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			CommonTypes::putString($out, $this->sound);
+		}else{
+			VarInt::writeUnsignedInt($out, LevelSoundEvent::toId($this->sound));
+		}
 		CommonTypes::putVector3($out, $this->position);
 		VarInt::writeSignedInt($out, $this->extraData);
 		CommonTypes::putString($out, $this->entityType);
 		CommonTypes::putBool($out, $this->isBabyMob);
 		CommonTypes::putBool($out, $this->disableRelativeVolume);
-		LE::writeSignedLong($out, $this->actorUniqueId);
-		CommonTypes::writeOptional($out, $this->firePosition, CommonTypes::putVector3(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+			LE::writeSignedLong($out, $this->actorUniqueId);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+				CommonTypes::writeOptional($out, $this->firePosition, CommonTypes::putVector3(...));
+			}
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

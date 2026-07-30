@@ -42,12 +42,12 @@ class ServerStatsPacket extends DataPacket implements ClientboundPacket{
 
 	public function getNetworkTime() : float{ return $this->networkTime; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->serverTime = LE::readFloat($in);
 		$this->networkTime = LE::readFloat($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeFloat($out, $this->serverTime);
 		LE::writeFloat($out, $this->networkTime);
 	}

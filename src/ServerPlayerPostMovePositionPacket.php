@@ -35,11 +35,11 @@ class ServerPlayerPostMovePositionPacket extends DataPacket implements Clientbou
 
 	public function getPosition() : Vector3{ return $this->position; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->position = CommonTypes::getVector3($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putVector3($out, $this->position);
 	}
 

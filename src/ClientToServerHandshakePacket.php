@@ -31,11 +31,11 @@ class ClientToServerHandshakePacket extends DataPacket implements ServerboundPac
 		return true;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		//No payload
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		//No payload
 	}
 

@@ -37,15 +37,19 @@ class ContainerClosePacket extends DataPacket implements ClientboundPacket, Serv
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->windowId = Byte::readUnsigned($in);
-		$this->windowType = Byte::readUnsigned($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			$this->windowType = Byte::readUnsigned($in);
+		}
 		$this->server = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->windowId);
-		Byte::writeUnsigned($out, $this->windowType);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			Byte::writeUnsigned($out, $this->windowType);
+		}
 		CommonTypes::putBool($out, $this->server);
 	}
 

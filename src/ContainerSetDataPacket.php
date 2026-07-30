@@ -47,13 +47,13 @@ class ContainerSetDataPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->windowId = Byte::readUnsigned($in);
 		$this->property = VarInt::readSignedInt($in);
 		$this->value = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->windowId);
 		VarInt::writeSignedInt($out, $this->property);
 		VarInt::writeSignedInt($out, $this->value);

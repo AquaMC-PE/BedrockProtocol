@@ -49,13 +49,13 @@ class AgentActionEventPacket extends DataPacket implements ClientboundPacket{
 
 	public function getResponseJson() : string{ return $this->responseJson; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->requestId = CommonTypes::getString($in);
 		$this->action = LE::readUnsignedInt($in);
 		$this->responseJson = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->requestId);
 		LE::writeUnsignedInt($out, $this->action);
 		CommonTypes::putString($out, $this->responseJson);

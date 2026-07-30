@@ -28,14 +28,14 @@ class UpdateBlockSyncedPacket extends UpdateBlockPacket{
 	public int $actorUniqueId;
 	public int $updateType;
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		parent::decodePayload($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		parent::decodePayload($in, $protocolId);
 		$this->actorUniqueId = VarInt::readUnsignedLong($in);
 		$this->updateType = VarInt::readUnsignedLong($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		parent::encodePayload($out);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		parent::encodePayload($out, $protocolId);
 		VarInt::writeUnsignedLong($out, $this->actorUniqueId);
 		VarInt::writeUnsignedLong($out, $this->updateType);
 	}

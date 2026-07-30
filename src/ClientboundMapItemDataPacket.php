@@ -55,7 +55,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 	public int $yOffset = 0;
 	public ?MapImage $colors = null;
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->mapId = CommonTypes::getActorUniqueId($in);
 		$this->type = VarInt::readUnsignedInt($in);
 		$this->dimensionId = Byte::readUnsigned($in);
@@ -78,7 +78,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 				$object = new MapTrackedObject();
 				$object->type = LE::readUnsignedInt($in);
 				if($object->type === MapTrackedObject::TYPE_BLOCK){
-					$object->blockPosition = CommonTypes::getBlockPosition($in);
+					$object->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 				}elseif($object->type === MapTrackedObject::TYPE_ENTITY){
 					$object->actorUniqueId = CommonTypes::getActorUniqueId($in);
 				}else{
@@ -113,7 +113,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->mapId);
 
 		$type = 0;
@@ -148,7 +148,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 			foreach($this->trackedEntities as $object){
 				LE::writeUnsignedInt($out, $object->type);
 				if($object->type === MapTrackedObject::TYPE_BLOCK){
-					CommonTypes::putBlockPosition($out, $object->blockPosition);
+					CommonTypes::putBlockPosition($out, $object->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 				}elseif($object->type === MapTrackedObject::TYPE_ENTITY){
 					CommonTypes::putActorUniqueId($out, $object->actorUniqueId);
 				}else{

@@ -43,16 +43,20 @@ class ClientboundDataDrivenUIShowScreenPacket extends DataPacket implements Clie
 
 	public function getDataInstanceId() : ?int{ return $this->dataInstanceId; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->screenId = CommonTypes::getString($in);
-		$this->formId = LE::readUnsignedInt($in);
-		$this->dataInstanceId = CommonTypes::readOptional($in, LE::readUnsignedInt(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			$this->formId = LE::readUnsignedInt($in);
+			$this->dataInstanceId = CommonTypes::readOptional($in, LE::readUnsignedInt(...));
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->screenId);
-		LE::writeUnsignedInt($out, $this->formId);
-		CommonTypes::writeOptional($out, $this->dataInstanceId, LE::writeUnsignedInt(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			LE::writeUnsignedInt($out, $this->formId);
+			CommonTypes::writeOptional($out, $this->dataInstanceId, LE::writeUnsignedInt(...));
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

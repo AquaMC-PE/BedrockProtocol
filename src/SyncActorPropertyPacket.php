@@ -38,11 +38,11 @@ class SyncActorPropertyPacket extends DataPacket implements ClientboundPacket{
 	/** @phpstan-return CacheableNbt<\pocketmine\nbt\tag\CompoundTag> */
 	public function getNbt() : CacheableNbt{ return $this->nbt; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->nbt = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		$out->writeByteArray($this->nbt->getEncodedNbt());
 	}
 

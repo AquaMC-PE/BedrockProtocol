@@ -87,11 +87,11 @@ final class LevelSettings{
 	 * @throws DataDecodeException
 	 * @throws PacketDecodeException
 	 */
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, ServerTelemetryData &$serverTelemetryData, int $protocolId) : self{
 		//TODO: in the future we'll use promoted properties + named arguments for decoding, but for now we stick with
 		//this shitty way to limit BC breaks (needs more R&D)
 		$result = new self;
-		$result->internalRead($in);
+		$result->internalRead($in, $serverTelemetryData, $protocolId);
 		return $result;
 	}
 
@@ -99,16 +99,18 @@ final class LevelSettings{
 	 * @throws DataDecodeException
 	 * @throws PacketDecodeException
 	 */
-	private function internalRead(ByteBufferReader $in) : void{
+	private function internalRead(ByteBufferReader $in, ServerTelemetryData &$serverTelemetryData, int $protocolId) : void{
 		$this->seed = LE::readUnsignedLong($in);
 		$this->spawnSettings = SpawnSettings::read($in);
 		$this->generator = VarInt::readSignedInt($in);
 		$this->worldGamemode = VarInt::readSignedInt($in);
-		$this->hardcore = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			$this->hardcore = CommonTypes::getBool($in);
+		}
 		$this->difficulty = VarInt::readSignedInt($in);
-		$this->spawnPosition = CommonTypes::getBlockPosition($in);
+		$this->spawnPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		$this->hasAchievementsDisabled = CommonTypes::getBool($in);
-		$this->editorWorldType = VarInt::readSignedInt($in);
+		$this->editorWorldType = $protocolId >= ProtocolInfo::PROTOCOL_1_20_30 ? VarInt::readSignedInt($in) : (CommonTypes::getBool($in) ? EditorWorldType::PROJECT : EditorWorldType::NON_EDITOR);
 		$this->createdInEditorMode = CommonTypes::getBool($in);
 		$this->exportedFromEditorMode = CommonTypes::getBool($in);
 		$this->time = VarInt::readSignedInt($in);
@@ -124,7 +126,7 @@ final class LevelSettings{
 		$this->platformBroadcastMode = VarInt::readSignedInt($in);
 		$this->commandsEnabled = CommonTypes::getBool($in);
 		$this->isTexturePacksRequired = CommonTypes::getBool($in);
-		$this->gameRules = CommonTypes::getGameRules($in, true);
+		$this->gameRules = CommonTypes::getGameRules($in, $protocolId, true);
 		$this->experiments = Experiments::read($in);
 		$this->hasBonusChestEnabled = CommonTypes::getBool($in);
 		$this->hasStartWithMapEnabled = CommonTypes::getBool($in);
@@ -148,20 +150,35 @@ final class LevelSettings{
 		$this->experimentalGameplayOverride = CommonTypes::readOptional($in, CommonTypes::getBool(...));
 		$this->chatRestrictionLevel = Byte::readUnsigned($in);
 		$this->disablePlayerInteractions = CommonTypes::getBool($in);
-		$this->serverEditorConnectionPolicy = VarInt::readSignedInt($in);
-		$this->allowAnonymousBlockDropsInEditorWorlds = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->serverEditorConnectionPolicy = VarInt::readSignedInt($in);
+			$this->allowAnonymousBlockDropsInEditorWorlds = CommonTypes::getBool($in);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0 && $protocolId <= ProtocolInfo::PROTOCOL_1_21_130){
+			$serverId = CommonTypes::getString($in);
+			$worldId = CommonTypes::getString($in);
+			$scenarioId = CommonTypes::getString($in);
+			$ownerId = $protocolId >= ProtocolInfo::PROTOCOL_1_21_90 ? CommonTypes::getString($in) : "";
+
+			$serverTelemetryData = new ServerTelemetryData($serverId, $scenarioId, $worldId, $ownerId);
+		}
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, ServerTelemetryData $serverTelemetryData, int $protocolId) : void{
 		LE::writeUnsignedLong($out, $this->seed);
 		$this->spawnSettings->write($out);
 		VarInt::writeSignedInt($out, $this->generator);
 		VarInt::writeSignedInt($out, $this->worldGamemode);
-		CommonTypes::putBool($out, $this->hardcore);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			CommonTypes::putBool($out, $this->hardcore);
+		}
 		VarInt::writeSignedInt($out, $this->difficulty);
-		CommonTypes::putBlockPosition($out, $this->spawnPosition);
+		CommonTypes::putBlockPosition($out, $this->spawnPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		CommonTypes::putBool($out, $this->hasAchievementsDisabled);
-		VarInt::writeSignedInt($out, $this->editorWorldType);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
+			VarInt::writeSignedInt($out, $this->editorWorldType);
+		}else{
+			CommonTypes::putBool($out, $this->editorWorldType !== EditorWorldType::NON_EDITOR);
+		}
 		CommonTypes::putBool($out, $this->createdInEditorMode);
 		CommonTypes::putBool($out, $this->exportedFromEditorMode);
 		VarInt::writeSignedInt($out, $this->time);
@@ -177,7 +194,7 @@ final class LevelSettings{
 		VarInt::writeSignedInt($out, $this->platformBroadcastMode);
 		CommonTypes::putBool($out, $this->commandsEnabled);
 		CommonTypes::putBool($out, $this->isTexturePacksRequired);
-		CommonTypes::putGameRules($out, $this->gameRules, true);
+		CommonTypes::putGameRules($out, $protocolId, $this->gameRules, true);
 		$this->experiments->write($out);
 		CommonTypes::putBool($out, $this->hasBonusChestEnabled);
 		CommonTypes::putBool($out, $this->hasStartWithMapEnabled);
@@ -201,7 +218,16 @@ final class LevelSettings{
 		CommonTypes::writeOptional($out, $this->experimentalGameplayOverride, CommonTypes::putBool(...));
 		Byte::writeUnsigned($out, $this->chatRestrictionLevel);
 		CommonTypes::putBool($out, $this->disablePlayerInteractions);
-		VarInt::writeSignedInt($out, $this->serverEditorConnectionPolicy);
-		CommonTypes::putBool($out, $this->allowAnonymousBlockDropsInEditorWorlds);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			VarInt::writeSignedInt($out, $this->serverEditorConnectionPolicy);
+			CommonTypes::putBool($out, $this->allowAnonymousBlockDropsInEditorWorlds);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0 && $protocolId <= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::putString($out, $serverTelemetryData->getServerId());
+			CommonTypes::putString($out, $serverTelemetryData->getWorldId());
+			CommonTypes::putString($out, $serverTelemetryData->getScenarioId());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_90){
+				CommonTypes::putString($out, $serverTelemetryData->getOwnerId());
+			}
+		}
 	}
 }

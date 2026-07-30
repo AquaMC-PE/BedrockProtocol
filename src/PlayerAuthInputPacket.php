@@ -33,12 +33,13 @@ use pocketmine\network\mcpe\protocol\types\PlayerBlockAction;
 use pocketmine\network\mcpe\protocol\types\PlayerBlockActionStopBreak;
 use pocketmine\network\mcpe\protocol\types\PlayerBlockActionWithBlockInfo;
 use pocketmine\network\mcpe\protocol\types\PlayMode;
+use function assert;
 use function count;
 
 class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::PLAYER_AUTH_INPUT_PACKET;
 
-	private Vector3 $position;
+	public Vector3 $position;
 	private float $pitch;
 	private float $yaw;
 	private float $headYaw;
@@ -48,6 +49,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 	private int $inputMode;
 	private int $playMode;
 	private int $interactionMode;
+	private ?Vector3 $vrGazeDirection = null;
 	private Vector2 $interactRotation;
 	private int $tick;
 	private Vector3 $delta;
@@ -76,6 +78,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		int $inputMode,
 		int $playMode,
 		int $interactionMode,
+		?Vector3 $vrGazeDirection,
 		Vector2 $interactRotation,
 		int $tick,
 		Vector3 $delta,
@@ -99,6 +102,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		$result->inputMode = $inputMode;
 		$result->playMode = $playMode;
 		$result->interactionMode = $interactionMode;
+		$result->vrGazeDirection = $vrGazeDirection;
 		$result->interactRotation = $interactRotation;
 		$result->tick = $tick;
 		$result->delta = $delta;
@@ -131,6 +135,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		int $inputMode,
 		int $playMode,
 		int $interactionMode,
+		?Vector3 $vrGazeDirection,
 		Vector2 $interactRotation,
 		int $tick,
 		Vector3 $delta,
@@ -145,6 +150,11 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 	) : self{
 		if($inputFlags->getLength() !== PlayerAuthInputFlags::NUMBER_OF_FLAGS){
 			throw new \InvalidArgumentException("Input flags must be " . PlayerAuthInputFlags::NUMBER_OF_FLAGS . " bits long");
+		}
+
+		if($playMode === PlayMode::VR and $vrGazeDirection === null){
+			//yuck, can we get a properly written packet just once? ...
+			throw new \InvalidArgumentException("Gaze direction must be provided for VR play mode");
 		}
 
 		$inputFlags->set(PlayerAuthInputFlags::PERFORM_ITEM_STACK_REQUEST, $itemStackRequest !== null);
@@ -163,6 +173,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 			$inputMode,
 			$playMode,
 			$interactionMode,
+			$vrGazeDirection?->asVector3(),
 			$interactRotation,
 			$tick,
 			$delta,
@@ -229,6 +240,10 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		return $this->interactionMode;
 	}
 
+	public function getVrGazeDirection() : ?Vector3{
+		return $this->vrGazeDirection;
+	}
+
 	public function getInteractRotation() : Vector2{ return $this->interactRotation; }
 
 	public function getTick() : int{
@@ -264,25 +279,29 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 
 	public function getRawMove() : Vector2{ return $this->rawMove; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->pitch = LE::readFloat($in);
 		$this->yaw = LE::readFloat($in);
 		$this->position = CommonTypes::getVector3($in);
 		$this->moveVecX = LE::readFloat($in);
 		$this->moveVecZ = LE::readFloat($in);
 		$this->headYaw = LE::readFloat($in);
-		$this->inputFlags = BitSet::read($in, PlayerAuthInputFlags::NUMBER_OF_FLAGS);
+		$this->inputFlags = BitSet::read($in, $protocolId >= ProtocolInfo::PROTOCOL_1_21_50 ? PlayerAuthInputFlags::NUMBER_OF_FLAGS : 64);
 		$this->inputMode = VarInt::readUnsignedInt($in);
 		$this->playMode = VarInt::readUnsignedInt($in);
 		$this->interactionMode = VarInt::readUnsignedInt($in);
-		$this->interactRotation = CommonTypes::getVector2($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			$this->interactRotation = CommonTypes::getVector2($in);
+		}elseif($this->playMode === PlayMode::VR){
+			$this->vrGazeDirection = CommonTypes::getVector3($in);
+		}
 		$this->tick = VarInt::readUnsignedLong($in);
 		$this->delta = CommonTypes::getVector3($in);
 		if($this->inputFlags->get(PlayerAuthInputFlags::PERFORM_ITEM_INTERACTION)){
 			$this->itemInteractionData = ItemInteractionData::read($in);
 		}
 		if($this->inputFlags->get(PlayerAuthInputFlags::PERFORM_ITEM_STACK_REQUEST)){
-			$this->itemStackRequest = ItemStackRequest::read($in);
+			$this->itemStackRequest = ItemStackRequest::read($in, $protocolId);
 		}
 		if($this->inputFlags->get(PlayerAuthInputFlags::PERFORM_BLOCK_ACTIONS)){
 			$this->blockActions = [];
@@ -296,34 +315,49 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 				};
 			}
 		}
-		if($this->inputFlags->get(PlayerAuthInputFlags::IN_CLIENT_PREDICTED_VEHICLE)){
-			$this->vehicleInfo = PlayerAuthInputVehicleInfo::read($in);
+		if($this->inputFlags->get(PlayerAuthInputFlags::IN_CLIENT_PREDICTED_VEHICLE) && $protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+			$this->vehicleInfo = PlayerAuthInputVehicleInfo::read($in, $protocolId);
 		}
 		$this->analogMoveVecX = LE::readFloat($in);
 		$this->analogMoveVecZ = LE::readFloat($in);
-		$this->cameraOrientation = CommonTypes::getVector3($in);
-		$this->rawMove = CommonTypes::getVector2($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			$this->cameraOrientation = CommonTypes::getVector3($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+				$this->rawMove = CommonTypes::getVector2($in);
+			}
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		$inputFlags = $this->inputFlags;
+
+		if($this->vehicleInfo !== null && $protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+			$inputFlags->set(PlayerAuthInputFlags::IN_CLIENT_PREDICTED_VEHICLE, true);
+		}
+
 		LE::writeFloat($out, $this->pitch);
 		LE::writeFloat($out, $this->yaw);
 		CommonTypes::putVector3($out, $this->position);
 		LE::writeFloat($out, $this->moveVecX);
 		LE::writeFloat($out, $this->moveVecZ);
 		LE::writeFloat($out, $this->headYaw);
-		$this->inputFlags->write($out);
+		$this->inputFlags->write($out, $protocolId >= ProtocolInfo::PROTOCOL_1_21_50 ? PlayerAuthInputFlags::NUMBER_OF_FLAGS : 64);
 		VarInt::writeUnsignedInt($out, $this->inputMode);
 		VarInt::writeUnsignedInt($out, $this->playMode);
 		VarInt::writeUnsignedInt($out, $this->interactionMode);
-		CommonTypes::putVector2($out, $this->interactRotation);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			CommonTypes::putVector2($out, $this->interactRotation);
+		}elseif($this->playMode === PlayMode::VR){
+			assert($this->vrGazeDirection !== null);
+			CommonTypes::putVector3($out, $this->vrGazeDirection);
+		}
 		VarInt::writeUnsignedLong($out, $this->tick);
 		CommonTypes::putVector3($out, $this->delta);
 		if($this->itemInteractionData !== null){
 			$this->itemInteractionData->write($out);
 		}
 		if($this->itemStackRequest !== null){
-			$this->itemStackRequest->write($out);
+			$this->itemStackRequest->write($out, $protocolId);
 		}
 		if($this->blockActions !== null){
 			VarInt::writeSignedInt($out, count($this->blockActions));
@@ -332,13 +366,17 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 				$blockAction->write($out);
 			}
 		}
-		if($this->vehicleInfo !== null){
-			$this->vehicleInfo->write($out);
+		if($this->vehicleInfo !== null && $protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+			$this->vehicleInfo->write($out, $protocolId);
 		}
 		LE::writeFloat($out, $this->analogMoveVecX);
 		LE::writeFloat($out, $this->analogMoveVecZ);
-		CommonTypes::putVector3($out, $this->cameraOrientation);
-		CommonTypes::putVector2($out, $this->rawMove);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			CommonTypes::putVector3($out, $this->cameraOrientation);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+				CommonTypes::putVector2($out, $this->rawMove);
+			}
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -65,19 +65,23 @@ class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPa
 		return $this->flags;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->emoteId = CommonTypes::getString($in);
-		$this->emoteLengthTicks = VarInt::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->emoteLengthTicks = VarInt::readUnsignedInt($in);
+		}
 		$this->xboxUserId = CommonTypes::getString($in);
 		$this->platformChatId = CommonTypes::getString($in);
 		$this->flags = Byte::readUnsigned($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		CommonTypes::putString($out, $this->emoteId);
-		VarInt::writeUnsignedInt($out, $this->emoteLengthTicks);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			VarInt::writeUnsignedInt($out, $this->emoteLengthTicks);
+		}
 		CommonTypes::putString($out, $this->xboxUserId);
 		CommonTypes::putString($out, $this->platformChatId);
 		Byte::writeUnsigned($out, $this->flags);

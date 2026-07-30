@@ -26,10 +26,10 @@ class DataPacketTest extends TestCase{
 		$pk->recipientSubId = 2;
 
 		$serializer = new ByteBufferWriter();
-		$pk->encode($serializer);
+		$pk->encode($serializer, ProtocolInfo::CURRENT_PROTOCOL);
 
 		$pk2 = new TestPacket();
-		$pk2->decode(new ByteBufferReader($serializer->getData()));
+		$pk2->decode(new ByteBufferReader($serializer->getData()), ProtocolInfo::CURRENT_PROTOCOL);
 		self::assertSame($pk2->senderSubId, 3);
 		self::assertSame($pk2->recipientSubId, 2);
 	}

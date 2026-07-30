@@ -17,7 +17,12 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraPreset;
+use function array_map;
 use function count;
 
 class CameraPresetsPacket extends DataPacket implements ClientboundPacket{
@@ -41,18 +46,44 @@ class CameraPresetsPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getPresets() : array{ return $this->presets; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->presets = [];
-		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
-			$this->presets[] = CameraPreset::read($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
+			$this->presets = [];
+			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
+				$this->presets[] = CameraPreset::read($in, $protocolId);
+			}
+		}else{
+			$this->fromNBT(CommonTypes::getNbtCompoundRoot($in));
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		VarInt::writeUnsignedInt($out, count($this->presets));
-		foreach($this->presets as $preset){
-			$preset->write($out);
+	protected function fromNBT(CompoundTag $nbt) : void{
+		$this->presets = [];
+
+		$presents = $nbt->getListTag("presets") ?? throw new \InvalidArgumentException("Missing presets tag");
+		foreach($presents as $presetTag){
+			if(!$presetTag instanceof CompoundTag){
+				throw new \InvalidArgumentException("Expected CompoundTag, got " . $presetTag->getType());
+			}
+
+			$this->presets[] = CameraPreset::fromNBT($presetTag);
 		}
+	}
+
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
+			VarInt::writeUnsignedInt($out, count($this->presets));
+			foreach($this->presets as $preset){
+				$preset->write($out, $protocolId);
+			}
+		}else{
+			$data = new CacheableNbt($this->toNBT($protocolId));
+			$out->writeByteArray($data->getEncodedNbt());
+		}
+	}
+
+	protected function toNBT(int $protocolId) : CompoundTag{
+		return CompoundTag::create()->setTag("presets", new ListTag(array_map(fn(CameraPreset $preset) => $preset->toNBT($protocolId), $this->presets)));
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

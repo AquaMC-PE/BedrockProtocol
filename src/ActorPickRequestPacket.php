@@ -38,13 +38,13 @@ class ActorPickRequestPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorUniqueId = LE::readSignedLong($in);
 		$this->hotbarSlot = Byte::readUnsigned($in);
 		$this->addUserData = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeSignedLong($out, $this->actorUniqueId);
 		Byte::writeUnsigned($out, $this->hotbarSlot);
 		CommonTypes::putBool($out, $this->addUserData);

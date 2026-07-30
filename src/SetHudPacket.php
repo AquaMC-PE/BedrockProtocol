@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
@@ -44,20 +45,28 @@ class SetHudPacket extends DataPacket implements ClientboundPacket{
 
 	public function getVisibility() : HudVisibility{ return $this->visibility; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->hudElements = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
-			$this->hudElements[] = HudElement::fromPacket(VarInt::readSignedInt($in));
+			$this->hudElements[] = HudElement::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_21_70 ? VarInt::readSignedInt($in) : Byte::readUnsigned($in));
 		}
-		$this->visibility = HudVisibility::fromPacket(VarInt::readSignedInt($in));
+		$this->visibility = HudVisibility::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_21_70 ? VarInt::readSignedInt($in) : Byte::readUnsigned($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->hudElements));
 		foreach($this->hudElements as $element){
-			VarInt::writeSignedInt($out, $element->value);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+				VarInt::writeSignedInt($out, $element->value);
+			}else{
+				Byte::writeUnsigned($out, $element->value);
+			}
 		}
-		VarInt::writeSignedInt($out, $this->visibility->value);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+			VarInt::writeSignedInt($out, $this->visibility->value);
+		}else{
+			Byte::writeUnsigned($out, $this->visibility->value);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

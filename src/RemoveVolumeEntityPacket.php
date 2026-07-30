@@ -38,12 +38,12 @@ class RemoveVolumeEntityPacket extends DataPacket implements ClientboundPacket{
 
 	public function getDimension() : int{ return $this->dimension; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->entityNetId = VarInt::readUnsignedInt($in);
 		$this->dimension = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->entityNetId);
 		VarInt::writeSignedInt($out, $this->dimension);
 	}

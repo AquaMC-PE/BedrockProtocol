@@ -52,12 +52,12 @@ class CompletedUsingItemPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	public function decodePayload(ByteBufferReader $in) : void{
+	public function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->itemId = LE::readSignedShort($in);
 		$this->action = LE::readSignedInt($in);
 	}
 
-	public function encodePayload(ByteBufferWriter $out) : void{
+	public function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeSignedShort($out, $this->itemId);
 		LE::writeSignedInt($out, $this->action);
 	}

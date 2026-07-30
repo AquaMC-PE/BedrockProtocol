@@ -102,7 +102,7 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->uuid = CommonTypes::getUUID($in);
 		$this->username = CommonTypes::getString($in);
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
@@ -118,18 +118,18 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		$this->syncedProperties = PropertySyncData::read($in);
 
 		$this->abilitiesPacket = new UpdateAbilitiesPacket();
-		$this->abilitiesPacket->decodePayload($in);
+		$this->abilitiesPacket->decodePayload($in, $protocolId);
 
 		$linkCount = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $linkCount; ++$i){
-			$this->links[$i] = CommonTypes::getEntityLink($in);
+			$this->links[$i] = CommonTypes::getEntityLink($in, $protocolId);
 		}
 
 		$this->deviceId = CommonTypes::getString($in);
 		$this->buildPlatform = LE::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putUUID($out, $this->uuid);
 		CommonTypes::putString($out, $this->username);
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
@@ -144,11 +144,11 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		CommonTypes::putEntityMetadata($out, $this->metadata);
 		$this->syncedProperties->write($out);
 
-		$this->abilitiesPacket->encodePayload($out);
+		$this->abilitiesPacket->encodePayload($out, $protocolId);
 
 		VarInt::writeUnsignedInt($out, count($this->links));
 		foreach($this->links as $link){
-			CommonTypes::putEntityLink($out, $link);
+			CommonTypes::putEntityLink($out, $protocolId, $link);
 		}
 
 		CommonTypes::putString($out, $this->deviceId);

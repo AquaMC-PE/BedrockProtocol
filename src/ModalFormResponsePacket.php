@@ -50,13 +50,13 @@ class ModalFormResponsePacket extends DataPacket implements ServerboundPacket{
 		return self::create($formId, null, $cancelReason);
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->formId = VarInt::readUnsignedInt($in);
 		$this->formData = CommonTypes::readOptional($in, CommonTypes::getString(...));
 		$this->cancelReason = CommonTypes::readOptional($in, Byte::readUnsigned(...));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->formId);
 
 		CommonTypes::writeOptional($out, $this->formData, CommonTypes::putString(...));

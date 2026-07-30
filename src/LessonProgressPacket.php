@@ -50,13 +50,13 @@ class LessonProgressPacket extends DataPacket implements ClientboundPacket{
 
 	public function getActivityId() : string{ return $this->activityId; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->action = VarInt::readSignedInt($in);
 		$this->score = VarInt::readSignedInt($in);
 		$this->activityId = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->action);
 		VarInt::writeSignedInt($out, $this->score);
 		CommonTypes::putString($out, $this->activityId);

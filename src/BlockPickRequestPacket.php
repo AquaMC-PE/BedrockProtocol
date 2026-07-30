@@ -38,13 +38,13 @@ class BlockPickRequestPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->blockPosition = CommonTypes::getBlockPosition($in);
 		$this->addUserData = CommonTypes::getBool($in);
 		$this->hotbarSlot = Byte::readUnsigned($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBlockPosition($out, $this->blockPosition);
 		CommonTypes::putBool($out, $this->addUserData);
 		Byte::writeUnsigned($out, $this->hotbarSlot);

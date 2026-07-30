@@ -39,7 +39,7 @@ class SyncWorldClocksPacket extends DataPacket implements ClientboundPacket{
 
 	public function getPayload() : SyncWorldClocksPayload{ return $this->payload; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->payload = match(VarInt::readUnsignedInt($in)){
 			SyncWorldClocksSyncState::ID => SyncWorldClocksSyncState::read($in),
 			SyncWorldClocksInitializeRegistry::ID => SyncWorldClocksInitializeRegistry::read($in),
@@ -49,7 +49,7 @@ class SyncWorldClocksPacket extends DataPacket implements ClientboundPacket{
 		};
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->payload->getTypeId());
 		$this->payload->write($out);
 	}

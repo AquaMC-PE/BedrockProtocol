@@ -18,6 +18,7 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 final class ItemStackResponseSlotInfo{
@@ -45,24 +46,28 @@ final class ItemStackResponseSlotInfo{
 
 	public function getDurabilityCorrection() : int{ return $this->durabilityCorrection; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$slot = Byte::readUnsigned($in);
 		$hotbarSlot = Byte::readUnsigned($in);
 		$count = Byte::readUnsigned($in);
 		$itemStackId = CommonTypes::readServerItemStackId($in);
 		$customName = CommonTypes::getString($in);
-		$filteredCustomName = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			$filteredCustomName = CommonTypes::getString($in);
+		}
 		$durabilityCorrection = VarInt::readSignedInt($in);
-		return new self($slot, $hotbarSlot, $count, $itemStackId, $customName, $filteredCustomName, $durabilityCorrection);
+		return new self($slot, $hotbarSlot, $count, $itemStackId, $customName, $filteredCustomName ?? $customName, $durabilityCorrection);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->slot);
 		Byte::writeUnsigned($out, $this->hotbarSlot);
 		Byte::writeUnsigned($out, $this->count);
 		CommonTypes::writeServerItemStackId($out, $this->itemStackId);
 		CommonTypes::putString($out, $this->customName);
-		CommonTypes::putString($out, $this->filteredCustomName);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			CommonTypes::putString($out, $this->filteredCustomName);
+		}
 		VarInt::writeSignedInt($out, $this->durabilityCorrection);
 	}
 }

@@ -43,7 +43,7 @@ class PlayStatusPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->status = BE::readUnsignedInt($in);
 	}
 
@@ -51,7 +51,7 @@ class PlayStatusPacket extends DataPacket implements ClientboundPacket{
 		return true;
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		BE::writeUnsignedInt($out, $this->status);
 	}
 

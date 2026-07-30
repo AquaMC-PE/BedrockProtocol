@@ -54,7 +54,7 @@ class PhotoTransferPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->photoName = CommonTypes::getString($in);
 		$this->photoData = CommonTypes::getString($in);
 		$this->bookId = CommonTypes::getString($in);
@@ -64,7 +64,7 @@ class PhotoTransferPacket extends DataPacket implements ClientboundPacket{
 		$this->newPhotoName = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->photoName);
 		CommonTypes::putString($out, $this->photoData);
 		CommonTypes::putString($out, $this->bookId);

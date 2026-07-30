@@ -38,13 +38,13 @@ class BlockActorDataPacket extends DataPacket implements ClientboundPacket, Serv
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->blockPosition = CommonTypes::getBlockPosition($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		$this->nbt = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		CommonTypes::putBlockPosition($out, $this->blockPosition);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putBlockPosition($out, $this->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		$out->writeByteArray($this->nbt->getEncodedNbt());
 	}
 

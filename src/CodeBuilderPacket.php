@@ -42,12 +42,12 @@ class CodeBuilderPacket extends DataPacket implements ClientboundPacket{
 		return $this->openCodeBuilder;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->url = CommonTypes::getString($in);
 		$this->openCodeBuilder = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->url);
 		CommonTypes::putBool($out, $this->openCodeBuilder);
 	}

@@ -46,7 +46,7 @@ class LevelEventGenericPacket extends DataPacket implements ClientboundPacket{
 		return $this->eventData;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->eventId = VarInt::readSignedInt($in);
 		$offset = $in->getOffset();
 		try{
@@ -57,7 +57,7 @@ class LevelEventGenericPacket extends DataPacket implements ClientboundPacket{
 		$in->setOffset($offset);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->eventId);
 		$out->writeByteArray((new NetworkNbtSerializer())->writeHeadless($this->eventData));
 	}

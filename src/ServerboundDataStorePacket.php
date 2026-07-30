@@ -34,12 +34,12 @@ class ServerboundDataStorePacket extends DataPacket implements ServerboundPacket
 
 	public function getUpdate() : DataStoreUpdate{ return $this->update; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->update = DataStoreUpdate::read($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->update = DataStoreUpdate::read($in, $protocolId);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		$this->update->write($out);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		$this->update->write($out, $protocolId);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

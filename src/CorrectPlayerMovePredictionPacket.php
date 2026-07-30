@@ -74,25 +74,44 @@ class CorrectPlayerMovePredictionPacket extends DataPacket implements Clientboun
 
 	public function getVehicleAngularVelocity() : ?float{ return $this->vehicleAngularVelocity; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->predictionType = Byte::readUnsigned($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			$this->predictionType = Byte::readUnsigned($in);
+		}
 		$this->position = CommonTypes::getVector3($in);
 		$this->delta = CommonTypes::getVector3($in);
-		$this->vehicleRotation = new Vector2(LE::readFloat($in), LE::readFloat($in));
-		$this->vehicleAngularVelocity = CommonTypes::readOptional($in, LE::readFloat(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80 && ($this->predictionType === self::PREDICTION_TYPE_VEHICLE || $protocolId >= ProtocolInfo::PROTOCOL_1_21_100)){
+			$this->vehicleRotation = new Vector2(LE::readFloat($in), LE::readFloat($in));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				$this->vehicleAngularVelocity = CommonTypes::readOptional($in, LE::readFloat(...));
+			}
+		}
 		$this->onGround = CommonTypes::getBool($in);
 		$this->tick = VarInt::readUnsignedLong($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60 && $protocolId < ProtocolInfo::PROTOCOL_1_20_80){
+			$this->predictionType = Byte::readUnsigned($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		Byte::writeUnsigned($out, $this->predictionType);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			Byte::writeUnsigned($out, $this->predictionType);
+		}
 		CommonTypes::putVector3($out, $this->position);
 		CommonTypes::putVector3($out, $this->delta);
-		LE::writeFloat($out, $this->vehicleRotation->getX());
-		LE::writeFloat($out, $this->vehicleRotation->getY());
-		CommonTypes::writeOptional($out, $this->vehicleAngularVelocity, LE::writeFloat(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_80 && ($this->predictionType === self::PREDICTION_TYPE_VEHICLE || $protocolId >= ProtocolInfo::PROTOCOL_1_21_100)){
+			LE::writeFloat($out, $this->vehicleRotation->getX());
+			LE::writeFloat($out, $this->vehicleRotation->getY());
+
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				CommonTypes::writeOptional($out, $this->vehicleAngularVelocity, LE::writeFloat(...));
+			}
+		}
 		CommonTypes::putBool($out, $this->onGround);
 		VarInt::writeUnsignedLong($out, $this->tick);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60 && $protocolId < ProtocolInfo::PROTOCOL_1_20_80){
+			Byte::writeUnsigned($out, $this->predictionType);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

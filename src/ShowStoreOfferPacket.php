@@ -19,32 +19,51 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\ShowStoreOfferRedirectType;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 class ShowStoreOfferPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::SHOW_STORE_OFFER_PACKET;
 
 	public UuidInterface $offerId;
+	public bool $showAll;
 	public ShowStoreOfferRedirectType $redirectType;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(UuidInterface $offerId, ShowStoreOfferRedirectType $redirectType) : self{
+	public static function create(UuidInterface $offerId, bool $showAll, ShowStoreOfferRedirectType $redirectType) : self{
 		$result = new self;
 		$result->offerId = $offerId;
+		$result->showAll = $showAll;
 		$result->redirectType = $redirectType;
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->offerId = CommonTypes::getUUID($in);
-		$this->redirectType = ShowStoreOfferRedirectType::fromPacket(Byte::readUnsigned($in));
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+			$this->offerId = CommonTypes::getUUID($in);
+		}else{
+			$this->offerId = Uuid::fromString(CommonTypes::getString($in));
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_50){
+			$this->redirectType = ShowStoreOfferRedirectType::fromPacket(Byte::readUnsigned($in));
+		}else{
+			$this->showAll = CommonTypes::getBool($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		CommonTypes::putUUID($out, $this->offerId);
-		Byte::writeUnsigned($out, $this->redirectType->value);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+			CommonTypes::putUUID($out, $this->offerId);
+		}else{
+			CommonTypes::putString($out, $this->offerId->toString());
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_50){
+			Byte::writeUnsigned($out, $this->redirectType->value);
+		}else{
+			CommonTypes::putBool($out, $this->showAll);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

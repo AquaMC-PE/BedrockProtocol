@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 use pocketmine\network\mcpe\protocol\types\recipe\RecipeIngredient;
@@ -54,21 +55,25 @@ final class CraftRecipeAutoStackRequestAction extends ItemStackRequestAction{
 	 */
 	public function getIngredients() : array{ return $this->ingredients; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::readRecipeNetId($in);
 		$repetitions = Byte::readUnsigned($in);
-		$repetitions2 = Byte::readUnsigned($in); //repetitions property is sent twice, mojang...
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$repetitions2 = Byte::readUnsigned($in); //repetitions property is sent twice, mojang...
+		}
 		$ingredients = [];
 		for($i = 0, $count = Byte::readUnsigned($in); $i < $count; ++$i){
 			$ingredients[] = CommonTypes::getRecipeIngredient($in);
 		}
-		return new self($recipeId, $repetitions, $repetitions2, $ingredients);
+		return new self($recipeId, $repetitions, $repetitions2 ?? 0, $ingredients);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeRecipeNetId($out, $this->recipeId);
 		Byte::writeUnsigned($out, $this->repetitions);
-		Byte::writeUnsigned($out, $this->repetitions2);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			Byte::writeUnsigned($out, $this->repetitions2);
+		}
 		Byte::writeUnsigned($out, count($this->ingredients));
 		foreach($this->ingredients as $ingredient){
 			CommonTypes::putRecipeIngredient($out, $ingredient);

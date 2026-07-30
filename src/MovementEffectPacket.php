@@ -48,14 +48,14 @@ class MovementEffectPacket extends DataPacket implements ClientboundPacket{
 
 	public function getTick() : int{ return $this->tick; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->effectType = MovementEffectType::fromPacket(VarInt::readUnsignedInt($in));
 		$this->duration = VarInt::readUnsignedInt($in);
 		$this->tick = VarInt::readUnsignedLong($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		VarInt::writeUnsignedInt($out, $this->effectType->value);
 		VarInt::writeUnsignedInt($out, $this->duration);

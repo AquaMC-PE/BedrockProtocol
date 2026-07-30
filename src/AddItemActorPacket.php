@@ -61,7 +61,7 @@ class AddItemActorPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->item = CommonTypes::getItemStackWrapper($in);
@@ -71,7 +71,7 @@ class AddItemActorPacket extends DataPacket implements ClientboundPacket{
 		$this->isFromFishing = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		CommonTypes::putItemStackWrapper($out, $this->item);

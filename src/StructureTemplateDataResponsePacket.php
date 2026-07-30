@@ -44,7 +44,7 @@ class StructureTemplateDataResponsePacket extends DataPacket implements Clientbo
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->structureTemplateName = CommonTypes::getString($in);
 		if(CommonTypes::getBool($in)){
 			$this->nbt = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
@@ -52,7 +52,7 @@ class StructureTemplateDataResponsePacket extends DataPacket implements Clientbo
 		$this->responseType = Byte::readUnsigned($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->structureTemplateName);
 		CommonTypes::putBool($out, $this->nbt !== null);
 		if($this->nbt !== null){

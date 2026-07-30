@@ -58,7 +58,7 @@ class MoveActorDeltaPacket extends DataPacket implements ClientboundPacket{
 		return 0.0;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->flags = LE::readUnsignedShort($in);
 		$this->xPos = $this->maybeReadCoord(self::FLAG_HAS_X, $in);
@@ -81,7 +81,7 @@ class MoveActorDeltaPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		LE::writeUnsignedShort($out, $this->flags);
 		$this->maybeWriteCoord(self::FLAG_HAS_X, $this->xPos, $out);

@@ -19,6 +19,7 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
 use pocketmine\color\Color;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\biome\chunkgen\BiomeDefinitionChunkGenData;
 use function count;
@@ -34,6 +35,10 @@ final class BiomeDefinitionData{
 		private int $id,
 		private float $temperature,
 		private float $downfall,
+		private float $redSporeDensity,
+		private float $blueSporeDensity,
+		private float $ashDensity,
+		private float $whiteAshDensity,
 		private float $foliageSnow,
 		private float $depth,
 		private float $scale,
@@ -50,6 +55,14 @@ final class BiomeDefinitionData{
 	public function getTemperature() : float{ return $this->temperature; }
 
 	public function getDownfall() : float{ return $this->downfall; }
+
+	public function getRedSporeDensity() : float{ return $this->redSporeDensity; }
+
+	public function getBlueSporeDensity() : float{ return $this->blueSporeDensity; }
+
+	public function getAshDensity() : float{ return $this->ashDensity; }
+
+	public function getWhiteAshDensity() : float{ return $this->whiteAshDensity; }
 
 	public function getFoliageSnow() : float{ return $this->foliageSnow; }
 
@@ -69,12 +82,19 @@ final class BiomeDefinitionData{
 
 	public function getChunkGenData() : ?BiomeDefinitionChunkGenData{ return $this->chunkGenData; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$nameIndex = LE::readUnsignedShort($in);
-		$id = LE::readUnsignedShort($in);
+		$id = $protocolId >= ProtocolInfo::PROTOCOL_1_21_100 ? LE::readUnsignedShort($in) : CommonTypes::readOptional($in, LE::readUnsignedShort(...)) ?? 65535;
 		$temperature = LE::readFloat($in);
 		$downfall = LE::readFloat($in);
-		$foliageSnow = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_111){
+			$foliageSnow = LE::readFloat($in);
+		}else{
+			$redSporeDensity = LE::readFloat($in);
+			$blueSporeDensity = LE::readFloat($in);
+			$ashDensity = LE::readFloat($in);
+			$whiteAshDensity = LE::readFloat($in);
+		}
 		$depth = LE::readFloat($in);
 		$scale = LE::readFloat($in);
 		$mapWaterColor = Color::fromARGB(LE::readUnsignedInt($in));
@@ -88,14 +108,18 @@ final class BiomeDefinitionData{
 
 			return $tagIndexes;
 		});
-		$chunkGenData = CommonTypes::readOptional($in, fn() => BiomeDefinitionChunkGenData::read($in));
+		$chunkGenData = CommonTypes::readOptional($in, fn() => BiomeDefinitionChunkGenData::read($in, $protocolId));
 
 		return new self(
 			$nameIndex,
 			$id,
 			$temperature,
 			$downfall,
-			$foliageSnow,
+			$redSporeDensity ?? 0.0,
+			$blueSporeDensity ?? 0.0,
+			$ashDensity ?? 0.0,
+			$whiteAshDensity ?? 0.0,
+			$foliageSnow ?? 0.0,
 			$depth,
 			$scale,
 			$mapWaterColor,
@@ -105,12 +129,23 @@ final class BiomeDefinitionData{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeUnsignedShort($out, $this->nameIndex);
-		LE::writeUnsignedShort($out, $this->id);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+			LE::writeUnsignedShort($out, $this->id);
+		}else{
+			CommonTypes::writeOptional($out, $this->id === 65535 ? null : $this->id, LE::writeUnsignedShort(...));
+		}
 		LE::writeFloat($out, $this->temperature);
 		LE::writeFloat($out, $this->downfall);
-		LE::writeFloat($out, $this->foliageSnow);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_111){
+			LE::writeFloat($out, $this->foliageSnow);
+		}else{
+			LE::writeFloat($out, $this->redSporeDensity);
+			LE::writeFloat($out, $this->blueSporeDensity);
+			LE::writeFloat($out, $this->ashDensity);
+			LE::writeFloat($out, $this->whiteAshDensity);
+		}
 		LE::writeFloat($out, $this->depth);
 		LE::writeFloat($out, $this->scale);
 		LE::writeUnsignedInt($out, $this->mapWaterColor->toARGB());
@@ -121,6 +156,6 @@ final class BiomeDefinitionData{
 				LE::writeUnsignedShort($out, $tag);
 			}
 		});
-		CommonTypes::writeOptional($out, $this->chunkGenData, fn(ByteBufferWriter $out, BiomeDefinitionChunkGenData $v) => $v->write($out));
+		CommonTypes::writeOptional($out, $this->chunkGenData, fn(ByteBufferWriter $out, BiomeDefinitionChunkGenData $v) => $v->write($out, $protocolId));
 	}
 }

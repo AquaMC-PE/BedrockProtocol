@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -62,7 +63,7 @@ final class CameraAimAssistCategoryPriorities{
 
 	public function getDefaultBlockPriority() : ?int{ return $this->defaultBlockPriority; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$entities = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$entities[] = CameraAimAssistCategoryPriority::read($in);
@@ -74,13 +75,17 @@ final class CameraAimAssistCategoryPriorities{
 		}
 
 		$blockTags = [];
-		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$blockTags[] = CameraAimAssistCategoryPriority::read($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+				$blockTags[] = CameraAimAssistCategoryPriority::read($in);
+			}
 		}
 
 		$entityTypeFamilies = [];
-		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$entityTypeFamilies[] = CameraAimAssistCategoryPriority::read($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+				$entityTypeFamilies[] = CameraAimAssistCategoryPriority::read($in);
+			}
 		}
 
 		$defaultEntityPriority = CommonTypes::readOptional($in, LE::readSignedInt(...));
@@ -95,7 +100,7 @@ final class CameraAimAssistCategoryPriorities{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->entities));
 		foreach($this->entities as $entity){
 			$entity->write($out);
@@ -106,14 +111,18 @@ final class CameraAimAssistCategoryPriorities{
 			$block->write($out);
 		}
 
-		VarInt::writeUnsignedInt($out, count($this->blockTags));
-		foreach($this->blockTags as $tag){
-			$tag->write($out);
-		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			VarInt::writeUnsignedInt($out, count($this->blockTags));
+			foreach($this->blockTags as $tag){
+				$tag->write($out);
+			}
 
-		VarInt::writeUnsignedInt($out, count($this->entityTypeFamilies));
-		foreach($this->entityTypeFamilies as $family){
-			$family->write($out);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+				VarInt::writeUnsignedInt($out, count($this->entityTypeFamilies));
+				foreach($this->entityTypeFamilies as $family){
+					$family->write($out);
+				}
+			}
 		}
 
 		CommonTypes::writeOptional($out, $this->defaultEntityPriority, LE::writeSignedInt(...));

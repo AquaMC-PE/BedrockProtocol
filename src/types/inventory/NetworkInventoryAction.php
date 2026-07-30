@@ -20,6 +20,7 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\DataDecodeException;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class NetworkInventoryAction{
@@ -138,7 +139,11 @@ class NetworkInventoryAction{
 	 * @throws DataDecodeException
 	 * @throws PacketDecodeException
 	 */
-	public function readTransaction(ByteBufferReader $in) : NetworkInventoryAction{
+	public function readTransaction(ByteBufferReader $in, int $protocolId) : NetworkInventoryAction{
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			return $this->readAuthInput($in);
+		}
+
 		$this->sourceType = VarInt::readUnsignedInt($in);
 
 		if(Byte::readUnsigned($in) !== 1){
@@ -161,7 +166,12 @@ class NetworkInventoryAction{
 	/**
 	 * @throws \InvalidArgumentException
 	 */
-	public function writeTransaction(ByteBufferWriter $out) : void{
+	public function writeTransaction(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->writeAuthInput($out);
+			return;
+		}
+
 		VarInt::writeUnsignedInt($out, $this->sourceType);
 
 		Byte::writeUnsigned($out, 1);

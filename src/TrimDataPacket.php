@@ -61,7 +61,7 @@ class TrimDataPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getTrimMaterials() : array{ return $this->trimMaterials; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->trimPatterns = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$this->trimPatterns[] = TrimPattern::read($in);
@@ -72,7 +72,7 @@ class TrimDataPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->trimPatterns));
 		foreach($this->trimPatterns as $trimPattern){
 			$trimPattern->write($out);

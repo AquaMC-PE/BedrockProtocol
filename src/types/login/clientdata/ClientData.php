@@ -43,10 +43,10 @@ final class ClientData{
 	/** @required */
 	public bool $CapeOnClassicSkin;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_26_30 */
 	public int $ClientEditorConnectionIntent;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_26_30 */
 	public bool $ClientIsEditorCapable;
 
 	/** @required */
@@ -70,30 +70,34 @@ final class ClientData{
 	/** @required */
 	public int $DeviceOS;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_26_20 */
 	public bool $FilterProfanity;
 
 	/** @required */
 	public string $GameVersion;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_21_70 */
 	public int $GraphicsMode;
 
 	/** @required */
 	public int $GuiScale;
 
+	/** <= ProtocolInfo::PROTOCOL_1_26_20 */
+	public bool $IsEditorMode;
+
 	/** @required */
 	public string $LanguageCode;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_21_40 */
 	public int $MaxViewDistance;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_21_40 */
 	public int $MemoryTier;
 
 	public bool $OverrideSkin;
 
 	public string $PartyId;
+	/** >= ProtocolInfo::PROTOCOL_1_26_20 */
 	public bool $IsPartyLeader;
 
 	/**
@@ -117,10 +121,13 @@ final class ClientData{
 	/** @required */
 	public string $PlatformOnlineId;
 
-	/** @required */
+	/** >= ProtocolInfo::PROTOCOL_1_21_40 */
 	public int $PlatformType;
 
 	public string $PlatformUserId = ""; //xbox-only, apparently
+
+	/** < ProtocolInfo::PROTOCOL_1_21_111 */
+	public string $PlayFabId;
 
 	/** @required */
 	public bool $PremiumSkin = false;
@@ -160,6 +167,9 @@ final class ClientData{
 
 	/** @required */
 	public string $ThirdPartyName;
+
+	/** <= ProtocolInfo::PROTOCOL_1_21_80 */
+	public bool $ThirdPartyNameOnly;
 
 	/** @required */
 	public bool $TrustedSkin;

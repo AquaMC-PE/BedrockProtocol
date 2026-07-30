@@ -48,10 +48,10 @@ abstract class DataPacket implements Packet{
 	/**
 	 * @throws PacketDecodeException
 	 */
-	final public function decode(ByteBufferReader $in) : void{
+	final public function decode(ByteBufferReader $in, int $protocolId) : void{
 		try{
 			$this->decodeHeader($in);
-			$this->decodePayload($in);
+			$this->decodePayload($in, $protocolId);
 		}catch(DataDecodeException | PacketDecodeException $e){
 			throw PacketDecodeException::wrap($e, $this->getName());
 		}
@@ -79,11 +79,11 @@ abstract class DataPacket implements Packet{
 	 * @throws PacketDecodeException
 	 * @throws DataDecodeException
 	 */
-	abstract protected function decodePayload(ByteBufferReader $in) : void;
+	abstract protected function decodePayload(ByteBufferReader $in, int $protocolId) : void;
 
-	final public function encode(ByteBufferWriter $out) : void{
+	final public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		$this->encodeHeader($out);
-		$this->encodePayload($out);
+		$this->encodePayload($out, $protocolId);
 	}
 
 	protected function encodeHeader(ByteBufferWriter $out) : void{
@@ -97,7 +97,7 @@ abstract class DataPacket implements Packet{
 	/**
 	 * Encodes the packet body, without the packet ID or other generic header fields.
 	 */
-	abstract protected function encodePayload(ByteBufferWriter $out) : void;
+	abstract protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void;
 
 	/**
 	 * @param string $name

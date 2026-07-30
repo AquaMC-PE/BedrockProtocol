@@ -42,12 +42,12 @@ class ToastRequestPacket extends DataPacket implements ClientboundPacket{
 
 	public function getBody() : string{ return $this->body; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->title = CommonTypes::getString($in);
 		$this->body = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->title);
 		CommonTypes::putString($out, $this->body);
 	}

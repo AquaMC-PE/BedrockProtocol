@@ -28,9 +28,9 @@ interface Packet{
 	/**
 	 * @throws PacketDecodeException
 	 */
-	public function decode(ByteBufferReader $in) : void;
+	public function decode(ByteBufferReader $in, int $protocolId) : void;
 
-	public function encode(ByteBufferWriter $out) : void;
+	public function encode(ByteBufferWriter $out, int $protocolId) : void;
 
 	/**
 	 * Performs handling for this packet. Usually you'll want an appropriately named method in the session handler for

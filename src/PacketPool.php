@@ -54,8 +54,11 @@ class PacketPool{
 		$this->registerPacket(new TakeItemActorPacket());
 		$this->registerPacket(new MoveActorAbsolutePacket());
 		$this->registerPacket(new MovePlayerPacket());
+		$this->registerPacket(new PassengerJumpPacket());
 		$this->registerPacket(new UpdateBlockPacket());
 		$this->registerPacket(new AddPaintingPacket());
+		$this->registerPacket(new TickSyncPacket());
+		$this->registerPacket(new LevelSoundEventPacketV1());
 		$this->registerPacket(new LevelEventPacket());
 		$this->registerPacket(new BlockEventPacket());
 		$this->registerPacket(new ActorEventPacket());
@@ -83,8 +86,10 @@ class PacketPool{
 		$this->registerPacket(new InventorySlotPacket());
 		$this->registerPacket(new ContainerSetDataPacket());
 		$this->registerPacket(new CraftingDataPacket());
+		$this->registerPacket(new CraftingEventPacket());
 		$this->registerPacket(new GuiDataPickItemPacket());
 		$this->registerPacket(new BlockActorDataPacket());
+		$this->registerPacket(new PlayerInputPacket());
 		$this->registerPacket(new LevelChunkPacket());
 		$this->registerPacket(new SetCommandsEnabledPacket());
 		$this->registerPacket(new SetDifficultyPacket());
@@ -144,6 +149,7 @@ class PacketPool{
 		$this->registerPacket(new NetworkStackLatencyPacket());
 		$this->registerPacket(new SpawnParticleEffectPacket());
 		$this->registerPacket(new AvailableActorIdentifiersPacket());
+		$this->registerPacket(new LevelSoundEventPacketV2());
 		$this->registerPacket(new NetworkChunkPublisherUpdatePacket());
 		$this->registerPacket(new BiomeDefinitionListPacket());
 		$this->registerPacket(new LevelSoundEventPacket());
@@ -217,6 +223,7 @@ class PacketPool{
 		$this->registerPacket(new CameraPresetsPacket());
 		$this->registerPacket(new UnlockedRecipesPacket());
 		$this->registerPacket(new CameraInstructionPacket());
+		$this->registerPacket(new CompressedBiomeDefinitionListPacket());
 		$this->registerPacket(new TrimDataPacket());
 		$this->registerPacket(new OpenSignPacket());
 		$this->registerPacket(new AgentAnimationPacket());
@@ -233,6 +240,7 @@ class PacketPool{
 		$this->registerPacket(new CameraAimAssistPacket());
 		$this->registerPacket(new ContainerRegistryCleanupPacket());
 		$this->registerPacket(new MovementEffectPacket());
+		$this->registerPacket(new SetMovementAuthorityPacket());
 		$this->registerPacket(new CameraAimAssistPresetsPacket());
 		$this->registerPacket(new ClientCameraAimAssistPacket());
 		$this->registerPacket(new ClientMovementPredictionSyncPacket());

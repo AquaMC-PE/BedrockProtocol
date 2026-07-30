@@ -18,6 +18,7 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistCategories;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistCategory;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistPreset;
 use function count;
@@ -56,32 +57,48 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 
 	public function getOperation() : int{ return $this->operation; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->categories = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
-			$this->categories[] = CameraAimAssistCategory::read($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
+				$this->categories[] = CameraAimAssistCategory::read($in, $protocolId);
+			}else{
+				$categories = CameraAimAssistCategories::read($in, $protocolId);
+				foreach($categories->getCategories() as $category){
+					$this->categories[] = $category;
+				}
+			}
 		}
 
 		$this->presets = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
-			$this->presets[] = CameraAimAssistPreset::read($in);
+			$this->presets[] = CameraAimAssistPreset::read($in, $protocolId);
 		}
 
-		$this->operation = Byte::readUnsigned($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			$this->operation = Byte::readUnsigned($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->categories));
 		foreach($this->categories as $category){
-			$category->write($out);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
+				$category->write($out, $protocolId);
+			}else{
+				$categories = new CameraAimAssistCategories($category->getName(), [$category]);
+				$categories->write($out, $protocolId);
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->presets));
 		foreach($this->presets as $preset){
-			$preset->write($out);
+			$preset->write($out, $protocolId);
 		}
 
-		Byte::writeUnsigned($out, $this->operation);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			Byte::writeUnsigned($out, $this->operation);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -42,13 +42,13 @@ class FeatureRegistryPacket extends DataPacket implements ClientboundPacket{
 	/** @return FeatureRegistryPacketEntry[] */
 	public function getEntries() : array{ return $this->entries; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		for($this->entries = [], $i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
 			$this->entries[] = FeatureRegistryPacketEntry::read($in);
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->entries));
 		foreach($this->entries as $entry){
 			$entry->write($out);

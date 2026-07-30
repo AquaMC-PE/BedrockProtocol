@@ -48,7 +48,7 @@ class SetDisplayObjectivePacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->displaySlot = CommonTypes::getString($in);
 		$this->objectiveName = CommonTypes::getString($in);
 		$this->displayName = CommonTypes::getString($in);
@@ -56,7 +56,7 @@ class SetDisplayObjectivePacket extends DataPacket implements ClientboundPacket{
 		$this->sortOrder = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->displaySlot);
 		CommonTypes::putString($out, $this->objectiveName);
 		CommonTypes::putString($out, $this->displayName);

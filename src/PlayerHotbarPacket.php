@@ -39,13 +39,13 @@ class PlayerHotbarPacket extends DataPacket implements ClientboundPacket, Server
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->selectedHotbarSlot = VarInt::readUnsignedInt($in);
 		$this->windowId = Byte::readUnsigned($in);
 		$this->selectHotbarSlot = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->selectedHotbarSlot);
 		Byte::writeUnsigned($out, $this->windowId);
 		CommonTypes::putBool($out, $this->selectHotbarSlot);

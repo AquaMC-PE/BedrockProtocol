@@ -42,12 +42,12 @@ class SettingsCommandPacket extends DataPacket implements ServerboundPacket{
 		return $this->suppressOutput;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->command = CommonTypes::getString($in);
 		$this->suppressOutput = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->command);
 		CommonTypes::putBool($out, $this->suppressOutput);
 	}

@@ -171,15 +171,36 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	public static function convertArg(int $protocolId, int $type) : int{
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_20_60){
+			return match($type){
+				self::ARG_TYPE_EQUIPMENT_SLOT => 43,
+				self::ARG_TYPE_STRING => 44,
+				self::ARG_TYPE_INT_POSITION => 52,
+				self::ARG_TYPE_POSITION => 53,
+				self::ARG_TYPE_MESSAGE => 55,
+				self::ARG_TYPE_RAWTEXT => 58,
+				self::ARG_TYPE_JSON => 62,
+				self::ARG_TYPE_BLOCK_STATES => 71,
+				self::ARG_TYPE_COMMAND => 74,
+				default => $type,
+			};
+		}
+
+		return $type;
+	}
+
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->enumValues = [];
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
 			$this->enumValues[] = CommonTypes::getString($in);
 		}
 
 		$this->chainedSubCommandValues = [];
-		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$this->chainedSubCommandValues[] = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
+				$this->chainedSubCommandValues[] = CommonTypes::getString($in);
+			}
 		}
 
 		$this->postfixes = [];
@@ -188,18 +209,21 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 		}
 
 		$this->enums = [];
+		$valueListSize = count($this->enumValues);
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$this->enums[] = CommandEnumRawData::read($in);
+			$this->enums[] = CommandEnumRawData::read($in, $valueListSize, $protocolId);
 		}
 
 		$this->chainedSubCommandData = [];
-		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$this->chainedSubCommandData[] = ChainedSubCommandRawData::read($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
+				$this->chainedSubCommandData[] = ChainedSubCommandRawData::read($in, $protocolId);
+			}
 		}
 
 		$this->commandData = [];
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$this->commandData[] = CommandRawData::read($in);
+			$this->commandData[] = CommandRawData::read($in, $protocolId);
 		}
 
 		$this->softEnums = [];
@@ -213,15 +237,17 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->enumValues));
 		foreach($this->enumValues as $value){
 			CommonTypes::putString($out, $value);
 		}
 
-		VarInt::writeUnsignedInt($out, count($this->chainedSubCommandValues));
-		foreach($this->chainedSubCommandValues as $value){
-			CommonTypes::putString($out, $value);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			VarInt::writeUnsignedInt($out, count($this->chainedSubCommandValues));
+			foreach($this->chainedSubCommandValues as $value){
+				CommonTypes::putString($out, $value);
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->postfixes));
@@ -230,18 +256,21 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->enums));
+		$valueListSize = count($this->enumValues);
 		foreach($this->enums as $enum){
-			$enum->write($out);
+			$enum->write($out, $valueListSize, $protocolId);
 		}
 
-		VarInt::writeUnsignedInt($out, count($this->chainedSubCommandData));
-		foreach($this->chainedSubCommandData as $data){
-			$data->write($out);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			VarInt::writeUnsignedInt($out, count($this->chainedSubCommandData));
+			foreach($this->chainedSubCommandData as $data){
+				$data->write($out, $protocolId);
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->commandData));
 		foreach($this->commandData as $data){
-			$data->write($out);
+			$data->write($out, $protocolId);
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->softEnums));

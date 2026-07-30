@@ -53,14 +53,14 @@ class PacketViolationWarningPacket extends DataPacket implements ServerboundPack
 
 	public function getMessage() : string{ return $this->message; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->type = VarInt::readSignedInt($in);
 		$this->severity = VarInt::readSignedInt($in);
 		$this->packetId = VarInt::readSignedInt($in);
 		$this->message = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->type);
 		VarInt::writeSignedInt($out, $this->severity);
 		VarInt::writeSignedInt($out, $this->packetId);

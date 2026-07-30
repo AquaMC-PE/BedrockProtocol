@@ -34,12 +34,12 @@ class CameraPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->cameraActorUniqueId = CommonTypes::getActorUniqueId($in);
 		$this->playerActorUniqueId = CommonTypes::getActorUniqueId($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->cameraActorUniqueId);
 		CommonTypes::putActorUniqueId($out, $this->playerActorUniqueId);
 	}

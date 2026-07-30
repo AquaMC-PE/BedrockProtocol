@@ -53,7 +53,7 @@ class LegacyTelemetryEventPacket extends DataPacket implements ClientboundPacket
 	public int $eventData;
 	public int $type;
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->playerRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->eventData = VarInt::readSignedInt($in);
 		$this->type = Byte::readUnsigned($in);
@@ -61,7 +61,7 @@ class LegacyTelemetryEventPacket extends DataPacket implements ClientboundPacket
 		//TODO: nice confusing mess
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->playerRuntimeId);
 		VarInt::writeSignedInt($out, $this->eventData);
 		Byte::writeUnsigned($out, $this->type);

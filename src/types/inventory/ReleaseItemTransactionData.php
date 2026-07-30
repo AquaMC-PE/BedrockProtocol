@@ -19,6 +19,7 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
@@ -51,17 +52,33 @@ class ReleaseItemTransactionData extends TransactionData{
 		return $this->headPosition;
 	}
 
-	protected function decodeData(ByteBufferReader $in) : void{
-		$this->actionType = VarInt::readSignedInt($in);
+	protected function decodeData(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->actionType = VarInt::readSignedInt($in);
+		}else{
+			$this->actionType = VarInt::readUnsignedInt($in);
+		}
 		$this->hotbarSlot = VarInt::readSignedInt($in);
-		$this->itemInHand = CommonTypes::getNetworkItemStackDescriptor($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->itemInHand = CommonTypes::getNetworkItemStackDescriptor($in);
+		}else{
+			$this->itemInHand = CommonTypes::getItemStackWrapper($in);
+		}
 		$this->headPosition = CommonTypes::getVector3($in);
 	}
 
-	protected function encodeData(ByteBufferWriter $out) : void{
-		VarInt::writeSignedInt($out, $this->actionType);
+	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			VarInt::writeSignedInt($out, $this->actionType);
+		}else{
+			VarInt::writeUnsignedInt($out, $this->actionType);
+		}
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
-		CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand);
+		}else{
+			CommonTypes::putItemStackWrapper($out, $this->itemInHand);
+		}
 		CommonTypes::putVector3($out, $this->headPosition);
 	}
 

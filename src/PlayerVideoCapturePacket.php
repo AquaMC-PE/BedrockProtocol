@@ -51,7 +51,7 @@ class PlayerVideoCapturePacket extends DataPacket implements ClientboundPacket{
 
 	public function getFilePrefix() : ?string{ return $this->filePrefix; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->recording = CommonTypes::getBool($in);
 		if($this->recording){
 			$this->frameRate = LE::readUnsignedInt($in);
@@ -59,7 +59,7 @@ class PlayerVideoCapturePacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->recording);
 		if($this->recording){
 			if($this->frameRate === null){ // this should never be the case

@@ -44,13 +44,13 @@ class ClientCameraAimAssistPacket extends DataPacket implements ServerboundPacke
 
 	public function getAllowAimAssist() : bool{ return $this->allowAimAssist; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->presetId = CommonTypes::getString($in);
 		$this->actionType = CameraAimAssistActionType::fromPacket(Byte::readUnsigned($in));
 		$this->allowAimAssist = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->presetId);
 		Byte::writeUnsigned($out, $this->actionType->value);
 		CommonTypes::putBool($out, $this->allowAimAssist);

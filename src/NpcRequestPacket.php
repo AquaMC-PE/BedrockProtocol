@@ -49,7 +49,7 @@ class NpcRequestPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->requestType = Byte::readUnsigned($in);
 		$this->commandString = CommonTypes::getString($in);
@@ -57,7 +57,7 @@ class NpcRequestPacket extends DataPacket implements ServerboundPacket{
 		$this->sceneName = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		Byte::writeUnsigned($out, $this->requestType);
 		CommonTypes::putString($out, $this->commandString);

@@ -45,7 +45,7 @@ class UpdateSoftEnumPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->enumName = CommonTypes::getString($in);
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$this->values[] = CommonTypes::getString($in);
@@ -53,7 +53,7 @@ class UpdateSoftEnumPacket extends DataPacket implements ClientboundPacket{
 		$this->type = Byte::readUnsigned($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->enumName);
 		VarInt::writeUnsignedInt($out, count($this->values));
 		foreach($this->values as $v){

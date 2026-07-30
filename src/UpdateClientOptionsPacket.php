@@ -40,14 +40,18 @@ class UpdateClientOptionsPacket extends DataPacket implements ServerboundPacket{
 
 	public function getFilterProfanityChange() : ?bool{ return $this->filterProfanityChange; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->graphicsMode = CommonTypes::readOptional($in, fn() => GraphicsMode::fromPacket(Byte::readUnsigned($in)));
-		$this->filterProfanityChange = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->filterProfanityChange = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeOptional($out, $this->graphicsMode, fn(ByteBufferWriter $out, GraphicsMode $v) => Byte::writeUnsigned($out, $v->value));
-		CommonTypes::writeOptional($out, $this->filterProfanityChange, CommonTypes::putBool(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			CommonTypes::writeOptional($out, $this->filterProfanityChange, CommonTypes::putBool(...));
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

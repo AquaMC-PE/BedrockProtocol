@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use pocketmine\network\mcpe\protocol\types\recipe\FurnaceRecipe;
 use pocketmine\network\mcpe\protocol\types\recipe\MaterialReducerRecipe;
 use pocketmine\network\mcpe\protocol\types\recipe\MaterialReducerRecipeOutput;
 use pocketmine\network\mcpe\protocol\types\recipe\MultiRecipe;
@@ -35,6 +36,8 @@ class CraftingDataPacket extends DataPacket implements ClientboundPacket{
 
 	public const ENTRY_SHAPELESS = 0;
 	public const ENTRY_SHAPED = 1;
+	public const ENTRY_FURNACE = 2;
+	public const ENTRY_FURNACE_DATA = 3;
 	public const ENTRY_MULTI = 4;
 	public const ENTRY_USER_DATA_SHAPELESS = 5;
 	public const ENTRY_SHAPELESS_CHEMISTRY = 6;
@@ -69,15 +72,16 @@ class CraftingDataPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$recipeCount = VarInt::readUnsignedInt($in);
 		$previousType = "none";
 		for($i = 0; $i < $recipeCount; ++$i){
 			$recipeType = VarInt::readSignedInt($in);
 
 			$this->recipesWithTypeIds[] = match($recipeType){
-				self::ENTRY_SHAPELESS, self::ENTRY_USER_DATA_SHAPELESS, self::ENTRY_SHAPELESS_CHEMISTRY => ShapelessRecipe::decode($recipeType, $in),
-				self::ENTRY_SHAPED, self::ENTRY_SHAPED_CHEMISTRY => ShapedRecipe::decode($recipeType, $in),
+				self::ENTRY_SHAPELESS, self::ENTRY_USER_DATA_SHAPELESS, self::ENTRY_SHAPELESS_CHEMISTRY => ShapelessRecipe::decode($recipeType, $in, $protocolId),
+				self::ENTRY_SHAPED, self::ENTRY_SHAPED_CHEMISTRY => ShapedRecipe::decode($recipeType, $in, $protocolId),
+				self::ENTRY_FURNACE, self::ENTRY_FURNACE_DATA => FurnaceRecipe::decode($recipeType, $in),
 				self::ENTRY_MULTI => MultiRecipe::decode($recipeType, $in),
 				self::ENTRY_SMITHING_TRANSFORM => SmithingTransformRecipe::decode($recipeType, $in),
 				self::ENTRY_SMITHING_TRIM => SmithingTrimRecipe::decode($recipeType, $in),
@@ -114,11 +118,11 @@ class CraftingDataPacket extends DataPacket implements ClientboundPacket{
 		$this->cleanRecipes = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->recipesWithTypeIds));
 		foreach($this->recipesWithTypeIds as $d){
 			VarInt::writeSignedInt($out, $d->getTypeId());
-			$d->encode($out);
+			$d->encode($out, $protocolId);
 		}
 		VarInt::writeUnsignedInt($out, count($this->potionTypeRecipes));
 		foreach($this->potionTypeRecipes as $recipe){

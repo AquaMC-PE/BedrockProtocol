@@ -44,23 +44,23 @@ class ClientboundDataStorePacket extends DataPacket implements ClientboundPacket
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->values = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$this->values[] = match(VarInt::readUnsignedInt($in)){
-				DataStoreOperationType::UPDATE => DataStoreUpdate::read($in),
-				DataStoreOperationType::CHANGE => DataStoreChange::read($in),
-				DataStoreOperationType::REMOVAL => DataStoreRemoval::read($in),
+				DataStoreOperationType::UPDATE => DataStoreUpdate::read($in, $protocolId),
+				DataStoreOperationType::CHANGE => DataStoreChange::read($in, $protocolId),
+				DataStoreOperationType::REMOVAL => DataStoreRemoval::read($in, $protocolId),
 				default => throw new PacketDecodeException("Unknown DataStore type"),
 			};
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->values));
 		foreach($this->values as $value){
 			VarInt::writeUnsignedInt($out, $value->getTypeId());
-			$value->write($out);
+			$value->write($out, $protocolId);
 		}
 	}
 

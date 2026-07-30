@@ -32,11 +32,11 @@ class SetDifficultyPacket extends DataPacket implements ClientboundPacket, Serve
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->difficulty = VarInt::readUnsignedInt($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->difficulty);
 	}
 

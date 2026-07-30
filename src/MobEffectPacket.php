@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
@@ -69,26 +70,38 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		return self::create($actorRuntimeId, self::EVENT_REMOVE, $effectId, 0, false, 0, $tick, false);
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->eventId = Byte::readUnsigned($in);
 		$this->effectId = VarInt::readSignedInt($in);
 		$this->amplifier = VarInt::readSignedInt($in);
 		$this->particles = CommonTypes::getBool($in);
 		$this->duration = VarInt::readSignedInt($in);
-		$this->tick = VarInt::readUnsignedLong($in);
-		$this->ambient = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			$this->tick = VarInt::readUnsignedLong($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+				$this->ambient = CommonTypes::getBool($in);
+			}
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			$this->tick = LE::readSignedLong($in);
+		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		Byte::writeUnsigned($out, $this->eventId);
 		VarInt::writeSignedInt($out, $this->effectId);
 		VarInt::writeSignedInt($out, $this->amplifier);
 		CommonTypes::putBool($out, $this->particles);
 		VarInt::writeSignedInt($out, $this->duration);
-		VarInt::writeUnsignedLong($out, $this->tick);
-		CommonTypes::putBool($out, $this->ambient);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			VarInt::writeUnsignedLong($out, $this->tick);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+				CommonTypes::putBool($out, $this->ambient);
+			}
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			LE::writeSignedLong($out, $this->tick);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
